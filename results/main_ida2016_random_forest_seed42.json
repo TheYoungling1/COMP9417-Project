@@ -1,0 +1,30 @@
+{
+  "dataset": "ida2016",
+  "model": "random_forest",
+  "task": "binary",
+  "n_train": 36000,
+  "n_val": 12000,
+  "n_test": 12000,
+  "d": 170,
+  "primary_metric": "auc_roc",
+  "test_metrics": {
+    "accuracy": 0.99175,
+    "auc_roc": 0.9893309322033899
+  },
+  "val_primary": 0.9856786016949153,
+  "train_time_s": 5.830841302871704,
+  "inference_time_s_per_sample": 1.5080352624257406e-05,
+  "best_hp": {
+    "n_estimators": 599,
+    "max_depth": 24,
+    "min_samples_split": 5,
+    "min_samples_leaf": 7,
+    "max_features": "log2"
+  },
+  "n_trials": 20,
+  "extra": {
+    "tune_time_s": 511.24160504341125,
+    "model_extra": {}
+  },
+  "error": null
+}

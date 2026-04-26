@@ -1,0 +1,14 @@
+{
+  "dataset": "ida2016",
+  "model": "xrfm",
+  "n_subsample": 36000,
+  "n_train_actual": 36000,
+  "n_test": 12000,
+  "train_time_s": 20.911160469055176,
+  "inference_time_s_per_sample": 9.513994057973226e-06,
+  "test_metrics": {
+    "accuracy": 0.9921666666666666,
+    "auc_roc": 0.9783745762711864
+  },
+  "primary_metric": "auc_roc"
+}

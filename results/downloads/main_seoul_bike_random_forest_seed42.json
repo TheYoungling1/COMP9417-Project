@@ -1,0 +1,30 @@
+{
+  "dataset": "seoul_bike",
+  "model": "random_forest",
+  "task": "regression",
+  "n_train": 5256,
+  "n_val": 1752,
+  "n_test": 1752,
+  "d": 12,
+  "primary_metric": "rmse",
+  "test_metrics": {
+    "rmse": 245.64179880098223,
+    "r2": 0.8551771554447418
+  },
+  "val_primary": 228.76178842667255,
+  "train_time_s": 0.512854814529419,
+  "inference_time_s_per_sample": 5.743642375893789e-05,
+  "best_hp": {
+    "n_estimators": 422,
+    "max_depth": 25,
+    "min_samples_split": 12,
+    "min_samples_leaf": 3,
+    "max_features": 0.5
+  },
+  "n_trials": 20,
+  "extra": {
+    "tune_time_s": 14.824235677719116,
+    "model_extra": {}
+  },
+  "error": null
+}

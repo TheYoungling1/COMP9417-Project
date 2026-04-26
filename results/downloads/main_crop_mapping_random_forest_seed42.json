@@ -1,0 +1,30 @@
+{
+  "dataset": "crop_mapping",
+  "model": "random_forest",
+  "task": "multiclass",
+  "n_train": 30000,
+  "n_val": 10000,
+  "n_test": 10000,
+  "d": 174,
+  "primary_metric": "accuracy",
+  "test_metrics": {
+    "accuracy": 0.9892,
+    "auc_roc": 0.99980955643541
+  },
+  "val_primary": 0.9912,
+  "train_time_s": 12.183357954025269,
+  "inference_time_s_per_sample": 2.3556804656982422e-05,
+  "best_hp": {
+    "n_estimators": 652,
+    "max_depth": 24,
+    "min_samples_split": 10,
+    "min_samples_leaf": 1,
+    "max_features": "sqrt"
+  },
+  "n_trials": 20,
+  "extra": {
+    "tune_time_s": 409.6095163822174,
+    "model_extra": {}
+  },
+  "error": null
+}

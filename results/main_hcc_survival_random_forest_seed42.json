@@ -1,0 +1,30 @@
+{
+  "dataset": "hcc_survival",
+  "model": "random_forest",
+  "task": "binary",
+  "n_train": 99,
+  "n_val": 33,
+  "n_test": 33,
+  "d": 49,
+  "primary_metric": "auc_roc",
+  "test_metrics": {
+    "accuracy": 0.8484848484848485,
+    "auc_roc": 0.85
+  },
+  "val_primary": 0.8807692307692307,
+  "train_time_s": 0.9354522228240967,
+  "inference_time_s_per_sample": 0.0036668777465820312,
+  "best_hp": {
+    "n_estimators": 796,
+    "max_depth": 24,
+    "min_samples_split": 17,
+    "min_samples_leaf": 1,
+    "max_features": "log2"
+  },
+  "n_trials": 20,
+  "extra": {
+    "tune_time_s": 17.344252586364746,
+    "model_extra": {}
+  },
+  "error": null
+}

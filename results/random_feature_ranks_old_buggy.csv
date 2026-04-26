@@ -1,0 +1,9 @@
+method,feature,rank,d
+AGOP,rv1,13,27
+AGOP,rv2,12,27
+PCA,rv1,2,27
+PCA,rv2,1,27
+MI,rv1,26,27
+MI,rv2,27,27
+Permutation,rv1,4,27
+Permutation,rv2,27,27

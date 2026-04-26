@@ -1,0 +1,14 @@
+{
+  "dataset": "ida2016",
+  "model": "catboost",
+  "n_subsample": 20000,
+  "n_train_actual": 20000,
+  "n_test": 12000,
+  "train_time_s": 0.7350471019744873,
+  "inference_time_s_per_sample": 5.304217338562011e-07,
+  "test_metrics": {
+    "accuracy": 0.9915833333333334,
+    "auc_roc": 0.9906279661016949
+  },
+  "primary_metric": "auc_roc"
+}

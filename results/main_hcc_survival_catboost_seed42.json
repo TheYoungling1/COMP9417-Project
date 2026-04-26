@@ -1,0 +1,32 @@
+{
+  "dataset": "hcc_survival",
+  "model": "catboost",
+  "task": "binary",
+  "n_train": 99,
+  "n_val": 33,
+  "n_test": 33,
+  "d": 49,
+  "primary_metric": "auc_roc",
+  "test_metrics": {
+    "accuracy": 0.7878787878787878,
+    "auc_roc": 0.8192307692307692
+  },
+  "val_primary": 0.9461538461538461,
+  "train_time_s": 0.5667588710784912,
+  "inference_time_s_per_sample": 4.655664617365057e-05,
+  "best_hp": {
+    "iterations": 2000,
+    "depth": 8,
+    "learning_rate": 0.05675206026988748,
+    "l2_leaf_reg": 0.011527987128232402,
+    "bagging_temperature": 0.9699098521619943,
+    "border_count": 32,
+    "early_stopping_rounds": 50
+  },
+  "n_trials": 30,
+  "extra": {
+    "tune_time_s": 17.458162307739258,
+    "model_extra": {}
+  },
+  "error": null
+}

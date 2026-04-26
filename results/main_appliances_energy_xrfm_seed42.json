@@ -1,0 +1,34 @@
+{
+  "dataset": "appliances_energy",
+  "model": "xrfm",
+  "task": "regression",
+  "n_train": 11841,
+  "n_val": 3947,
+  "n_test": 3947,
+  "d": 27,
+  "primary_metric": "rmse",
+  "test_metrics": {
+    "rmse": 65.29398296719118,
+    "r2": 0.5739716795173959
+  },
+  "val_primary": 68.29301800270318,
+  "train_time_s": 11.5247163772583,
+  "inference_time_s_per_sample": 2.600514257531061e-05,
+  "best_hp": {
+    "bandwidth": 12.718917406104362,
+    "exponent": 0.7883915127566382,
+    "kernel": "l1",
+    "reg": 0.06112821844728239,
+    "diag": true,
+    "bandwidth_mode": "constant",
+    "iters": 5,
+    "M_batch_size": 1000,
+    "max_leaf_size": 11841
+  },
+  "n_trials": 25,
+  "extra": {
+    "tune_time_s": 222.46291065216064,
+    "model_extra": {}
+  },
+  "error": null
+}

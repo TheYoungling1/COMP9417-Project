@@ -1,0 +1,18 @@
+{
+  "dataset": "ida2016",
+  "model": "tabpfn",
+  "task": "binary",
+  "n_train": 36000,
+  "n_val": 12000,
+  "n_test": 12000,
+  "d": 170,
+  "primary_metric": "auc_roc",
+  "test_metrics": {},
+  "val_primary": -Infinity,
+  "train_time_s": NaN,
+  "inference_time_s_per_sample": NaN,
+  "best_hp": {},
+  "n_trials": 1,
+  "extra": {},
+  "error": "TabPFNLicenseError: TabPFN requires a one-time license acceptance to download\nmodel weights for local inference, but no interactive terminal\nis available.\n\nTo authenticate in a non-interactive environment:\n  1. Open https://ux.priorlabs.ai in a browser and log in (or register)\n  2. Accept the license on the Licenses tab\n  3. Copy your API Key from https://ux.priorlabs.ai/account\n  4. Set the environment variable: export TABPFN_TOKEN=\"<your-api-key>\"\n     or in Python (before calling .fit()): import os; os.environ[\"TABPFN_TOKEN\"] = \"<your-api-key>\"\nTraceback (most recent call last):\n  File \"/root/src/experiments.py\", line 216, in run_experiment\n    final_model.fit(split)\n  File \"/root/src/models.py\", line 315, in fit\n    model.fit(X_train, y_train)\n  File \"/usr/local/lib/python3.12/contextlib.py\", line 81, in inner\n    return func(*args, **kwds)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/tabpfn_common_utils/telemetry/core/decorators.py\", line 321, in wrapper\n    return _safe_call_with_telemetry(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/tabpfn_common_utils/telemetry/core/decorators.py\", line 365, in _safe_call_with_telemetry\n    result = func(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/tabpfn/classifier.py\", line 762, in fit\n    byte_size = self._initialize_model_variables()\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/tabpfn/classifier.py\", line 572, in _initialize_model_variables\n    return initialize_model_variables_helper(self, self.estimator_type)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/tabpfn/base.py\", line 379, in initialize_model_variables_helper\n    initialize_tabpfn_model(\n  File \"/usr/local/lib/python3.12/site-packages/tabpfn/base.py\", line 185, in initialize_tabpfn_model\n    load_model_criterion_config(\n  File \"/usr/local/lib/python3.12/site-packages/tabpfn/model_loading.py\", line 647, in load_model_criterion_config\n    raise res[0]\n  File \"/usr/local/lib/python3.12/site-packages/tabpfn/model_loading.py\", line 472, in _download_model\n    ensure_license_accepted(hf_repo_id=_HF_REPOS[version])\n  File \"/usr/local/lib/python3.12/site-packages/tabpfn/browser_auth.py\", line 602, in ensure_license_accepted\n    raise TabPFNLicenseError(\ntabpfn.errors.TabPFNLicenseError: TabPFN requires a one-time license acceptance to download\nmodel weights for local inference, but no interactive terminal\nis available.\n\nTo authenticate in a non-interactive environment:\n  1. Open https://ux.priorlabs.ai in a browser and log in (or register)\n  2. Accept the license on the Licenses tab\n  3. Copy your API Key from https://ux.priorlabs.ai/account\n  4. Set the environment variable: export TABPFN_TOKEN=\"<your-api-key>\"\n     or in Python (before calling .fit()): import os; os.environ[\"TABPFN_TOKEN\"] = \"<your-api-key>\"\n"
+}

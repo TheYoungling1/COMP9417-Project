@@ -1,0 +1,15 @@
+{
+  "dataset": "ida2016",
+  "model": "xrfm",
+  "n_subsample": 25000,
+  "n_train_actual": 25000,
+  "n_test": 12000,
+  "train_time_s": 8.028661012649536,
+  "inference_time_s_per_sample": 2.976437409718831e-06,
+  "test_metrics": {
+    "accuracy": 0.9833333333333333,
+    "auc_roc": NaN,
+    "auc_roc_error": "index 1 is out of bounds for axis 1 with size 1"
+  },
+  "primary_metric": "auc_roc"
+}

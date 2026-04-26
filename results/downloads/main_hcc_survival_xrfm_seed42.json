@@ -1,0 +1,34 @@
+{
+  "dataset": "hcc_survival",
+  "model": "xrfm",
+  "task": "binary",
+  "n_train": 99,
+  "n_val": 33,
+  "n_test": 33,
+  "d": 49,
+  "primary_metric": "auc_roc",
+  "test_metrics": {
+    "accuracy": 0.7575757575757576,
+    "auc_roc": 0.8
+  },
+  "val_primary": 0.8923076923076924,
+  "train_time_s": 0.12365937232971191,
+  "inference_time_s_per_sample": 5.049416513154001e-05,
+  "best_hp": {
+    "bandwidth": 23.076168040117306,
+    "exponent": 0.7325152889039983,
+    "kernel": "l2",
+    "reg": 2.456459215250752e-06,
+    "diag": false,
+    "bandwidth_mode": "constant",
+    "iters": 5,
+    "M_batch_size": 1000,
+    "max_leaf_size": 99
+  },
+  "n_trials": 25,
+  "extra": {
+    "tune_time_s": 9.099040746688843,
+    "model_extra": {}
+  },
+  "error": null
+}

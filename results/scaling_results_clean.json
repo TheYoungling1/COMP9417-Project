@@ -1,0 +1,338 @@
+[
+  {
+    "dataset": "ida2016",
+    "model": "catboost",
+    "n_subsample": 10000,
+    "n_train_actual": 10000,
+    "n_test": 12000,
+    "train_time_s": 0.8878986835479736,
+    "inference_time_s_per_sample": 7.749001185099284e-07,
+    "test_metrics": {
+      "accuracy": 0.99125,
+      "auc_roc": 0.9899851694915254
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "catboost",
+    "n_subsample": 1000,
+    "n_train_actual": 1000,
+    "n_test": 12000,
+    "train_time_s": 0.27842140197753906,
+    "inference_time_s_per_sample": 5.809863408406576e-07,
+    "test_metrics": {
+      "accuracy": 0.9864166666666667,
+      "auc_roc": 0.9837398305084746
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "catboost",
+    "n_subsample": 20000,
+    "n_train_actual": 20000,
+    "n_test": 12000,
+    "train_time_s": 0.893244743347168,
+    "inference_time_s_per_sample": 4.971027374267578e-07,
+    "test_metrics": {
+      "accuracy": 0.9915833333333334,
+      "auc_roc": 0.9906279661016949
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "catboost",
+    "n_subsample": 2500,
+    "n_train_actual": 2500,
+    "n_test": 12000,
+    "train_time_s": 0.3912169933319092,
+    "inference_time_s_per_sample": 5.926092465718588e-07,
+    "test_metrics": {
+      "accuracy": 0.9890833333333333,
+      "auc_roc": 0.9884152542372882
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "catboost",
+    "n_subsample": 36000,
+    "n_train_actual": 36000,
+    "n_test": 12000,
+    "train_time_s": 2.6072475910186768,
+    "inference_time_s_per_sample": 9.666085243225097e-07,
+    "test_metrics": {
+      "accuracy": 0.9940833333333333,
+      "auc_roc": 0.9925542372881356
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "catboost",
+    "n_subsample": 5000,
+    "n_train_actual": 5000,
+    "n_test": 12000,
+    "train_time_s": 0.7265338897705078,
+    "inference_time_s_per_sample": 8.064905802408854e-07,
+    "test_metrics": {
+      "accuracy": 0.99,
+      "auc_roc": 0.98945
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "random_forest",
+    "n_subsample": 10000,
+    "n_train_actual": 10000,
+    "n_test": 12000,
+    "train_time_s": 1.1653287410736084,
+    "inference_time_s_per_sample": 9.366591771443684e-06,
+    "test_metrics": {
+      "accuracy": 0.9908333333333333,
+      "auc_roc": 0.9875947033898302
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "random_forest",
+    "n_subsample": 1000,
+    "n_train_actual": 1000,
+    "n_test": 12000,
+    "train_time_s": 0.5105385780334473,
+    "inference_time_s_per_sample": 7.570584615071615e-06,
+    "test_metrics": {
+      "accuracy": 0.98875,
+      "auc_roc": 0.9808707627118645
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "random_forest",
+    "n_subsample": 20000,
+    "n_train_actual": 20000,
+    "n_test": 12000,
+    "train_time_s": 2.901118040084839,
+    "inference_time_s_per_sample": 9.205222129821777e-06,
+    "test_metrics": {
+      "accuracy": 0.9923333333333333,
+      "auc_roc": 0.9874434322033897
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "random_forest",
+    "n_subsample": 2500,
+    "n_train_actual": 2500,
+    "n_test": 12000,
+    "train_time_s": 0.66361403465271,
+    "inference_time_s_per_sample": 1.207423210144043e-05,
+    "test_metrics": {
+      "accuracy": 0.9895833333333334,
+      "auc_roc": 0.9758398305084746
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "random_forest",
+    "n_subsample": 36000,
+    "n_train_actual": 36000,
+    "n_test": 12000,
+    "train_time_s": 6.204341173171997,
+    "inference_time_s_per_sample": 9.499490261077881e-06,
+    "test_metrics": {
+      "accuracy": 0.9931666666666666,
+      "auc_roc": 0.989817161016949
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "random_forest",
+    "n_subsample": 5000,
+    "n_train_actual": 5000,
+    "n_test": 12000,
+    "train_time_s": 0.5704941749572754,
+    "inference_time_s_per_sample": 7.435202598571778e-06,
+    "test_metrics": {
+      "accuracy": 0.9896666666666667,
+      "auc_roc": 0.9850605932203389
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xgboost",
+    "n_subsample": 10000,
+    "n_train_actual": 10000,
+    "n_test": 12000,
+    "train_time_s": 2.0842599868774414,
+    "inference_time_s_per_sample": 1.2124180793762208e-06,
+    "test_metrics": {
+      "accuracy": 0.99025,
+      "auc_roc": 0.9875970338983051
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xgboost",
+    "n_subsample": 1000,
+    "n_train_actual": 1000,
+    "n_test": 12000,
+    "train_time_s": 1.044123649597168,
+    "inference_time_s_per_sample": 7.317264874776205e-07,
+    "test_metrics": {
+      "accuracy": 0.9854166666666667,
+      "auc_roc": 0.9815271186440678
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xgboost",
+    "n_subsample": 20000,
+    "n_train_actual": 20000,
+    "n_test": 12000,
+    "train_time_s": 3.228672981262207,
+    "inference_time_s_per_sample": 1.3269186019897461e-06,
+    "test_metrics": {
+      "accuracy": 0.9929166666666667,
+      "auc_roc": 0.9901330508474576
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xgboost",
+    "n_subsample": 2500,
+    "n_train_actual": 2500,
+    "n_test": 12000,
+    "train_time_s": 0.8268556594848633,
+    "inference_time_s_per_sample": 7.740259170532227e-07,
+    "test_metrics": {
+      "accuracy": 0.9885,
+      "auc_roc": 0.9866137711864407
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xgboost",
+    "n_subsample": 36000,
+    "n_train_actual": 36000,
+    "n_test": 12000,
+    "train_time_s": 5.1313676834106445,
+    "inference_time_s_per_sample": 1.4762679735819499e-06,
+    "test_metrics": {
+      "accuracy": 0.9934166666666666,
+      "auc_roc": 0.988825
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xgboost",
+    "n_subsample": 5000,
+    "n_train_actual": 5000,
+    "n_test": 12000,
+    "train_time_s": 1.6328108310699463,
+    "inference_time_s_per_sample": 1.0572671890258789e-06,
+    "test_metrics": {
+      "accuracy": 0.9894166666666667,
+      "auc_roc": 0.9876332627118645
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xrfm",
+    "n_subsample": 10000,
+    "n_train_actual": 10000,
+    "n_test": 12000,
+    "train_time_s": 1.0577619075775146,
+    "inference_time_s_per_sample": 1.2105902036031087e-06,
+    "test_metrics": {
+      "accuracy": 0.989,
+      "auc_roc": 0.9786851694915255
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xrfm",
+    "n_subsample": 1000,
+    "n_train_actual": 1000,
+    "n_test": 12000,
+    "train_time_s": 0.7997677326202393,
+    "inference_time_s_per_sample": 4.931410153706868e-06,
+    "test_metrics": {
+      "accuracy": 0.98425,
+      "auc_roc": 0.9778709745762713
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xrfm",
+    "n_subsample": 20000,
+    "n_train_actual": 20000,
+    "n_test": 12000,
+    "train_time_s": 5.205327033996582,
+    "inference_time_s_per_sample": 5.194763342539469e-06,
+    "test_metrics": {
+      "accuracy": 0.9895833333333334,
+      "auc_roc": 0.9815154661016948
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xrfm",
+    "n_subsample": 2500,
+    "n_train_actual": 2500,
+    "n_test": 12000,
+    "train_time_s": 0.9490547180175781,
+    "inference_time_s_per_sample": 5.8455467224121095e-06,
+    "test_metrics": {
+      "accuracy": 0.9869166666666667,
+      "auc_roc": 0.9793669491525423
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xrfm",
+    "n_subsample": 36000,
+    "n_train_actual": 36000,
+    "n_test": 12000,
+    "train_time_s": 20.911160469055176,
+    "inference_time_s_per_sample": 9.513994057973226e-06,
+    "test_metrics": {
+      "accuracy": 0.9921666666666666,
+      "auc_roc": 0.9783745762711864
+    },
+    "primary_metric": "auc_roc"
+  },
+  {
+    "dataset": "ida2016",
+    "model": "xrfm",
+    "n_subsample": 5000,
+    "n_train_actual": 5000,
+    "n_test": 12000,
+    "train_time_s": 0.9186627864837646,
+    "inference_time_s_per_sample": 4.4837594032287594e-06,
+    "test_metrics": {
+      "accuracy": 0.9884166666666667,
+      "auc_roc": 0.9787381355932204
+    },
+    "primary_metric": "auc_roc"
+  }
+]

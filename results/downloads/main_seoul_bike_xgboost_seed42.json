@@ -1,0 +1,34 @@
+{
+  "dataset": "seoul_bike",
+  "model": "xgboost",
+  "task": "regression",
+  "n_train": 5256,
+  "n_val": 1752,
+  "n_test": 1752,
+  "d": 12,
+  "primary_metric": "rmse",
+  "test_metrics": {
+    "rmse": 232.32192658689732,
+    "r2": 0.8704573024110265
+  },
+  "val_primary": 211.72928442519128,
+  "train_time_s": 5.405781507492065,
+  "inference_time_s_per_sample": 3.72139830567521e-05,
+  "best_hp": {
+    "n_estimators": 2000,
+    "max_depth": 7,
+    "learning_rate": 0.007111892138745064,
+    "subsample": 0.6165823115658553,
+    "colsample_bytree": 0.9925765638710656,
+    "reg_alpha": 3.0016016676776628e-06,
+    "reg_lambda": 0.00037601819485823555,
+    "min_child_weight": 2,
+    "early_stopping_rounds": 50
+  },
+  "n_trials": 40,
+  "extra": {
+    "tune_time_s": 126.04096031188965,
+    "model_extra": {}
+  },
+  "error": null
+}

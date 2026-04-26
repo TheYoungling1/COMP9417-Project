@@ -1,0 +1,33 @@
+# Claude Code / agent scratch
+.claude/
+.context/
+PROGRESS.md
+.cursor/
+.aider*
+CLAUDE.md
+GEMINI.md
+AGENTS.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Project-local artifacts (cached data, results, figures, build output)
+data_cache/
+.modal/

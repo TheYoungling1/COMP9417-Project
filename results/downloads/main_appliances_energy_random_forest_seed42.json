@@ -1,0 +1,30 @@
+{
+  "dataset": "appliances_energy",
+  "model": "random_forest",
+  "task": "regression",
+  "n_train": 11841,
+  "n_val": 3947,
+  "n_test": 3947,
+  "d": 27,
+  "primary_metric": "rmse",
+  "test_metrics": {
+    "rmse": 72.6139725351176,
+    "r2": 0.4730947327481273
+  },
+  "val_primary": 73.7450345922906,
+  "train_time_s": 1.688896656036377,
+  "inference_time_s_per_sample": 4.1430045418537564e-05,
+  "best_hp": {
+    "n_estimators": 652,
+    "max_depth": 24,
+    "min_samples_split": 10,
+    "min_samples_leaf": 1,
+    "max_features": "sqrt"
+  },
+  "n_trials": 20,
+  "extra": {
+    "tune_time_s": 35.230940103530884,
+    "model_extra": {}
+  },
+  "error": null
+}

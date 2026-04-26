@@ -1,0 +1,34 @@
+{
+  "dataset": "ida2016",
+  "model": "xgboost",
+  "task": "binary",
+  "n_train": 36000,
+  "n_val": 12000,
+  "n_test": 12000,
+  "d": 170,
+  "primary_metric": "auc_roc",
+  "test_metrics": {
+    "accuracy": 0.9929166666666667,
+    "auc_roc": 0.9927745762711865
+  },
+  "val_primary": 0.9877004237288135,
+  "train_time_s": 52.07891130447388,
+  "inference_time_s_per_sample": 3.0246376991271972e-05,
+  "best_hp": {
+    "n_estimators": 2000,
+    "max_depth": 8,
+    "learning_rate": 0.00357647851379167,
+    "subsample": 0.8739461643053529,
+    "colsample_bytree": 0.7504273955092581,
+    "reg_alpha": 0.40769679966924793,
+    "reg_lambda": 9.650554673574462,
+    "min_child_weight": 10,
+    "early_stopping_rounds": 50
+  },
+  "n_trials": 40,
+  "extra": {
+    "tune_time_s": 1492.7798161506653,
+    "model_extra": {}
+  },
+  "error": null
+}

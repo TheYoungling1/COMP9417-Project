@@ -1,0 +1,34 @@
+{
+  "dataset": "seoul_bike",
+  "model": "xrfm",
+  "task": "regression",
+  "n_train": 5256,
+  "n_val": 1752,
+  "n_test": 1752,
+  "d": 12,
+  "primary_metric": "rmse",
+  "test_metrics": {
+    "rmse": 238.44264252161153,
+    "r2": 0.863541564456715
+  },
+  "val_primary": 218.7280306373861,
+  "train_time_s": 2.12813401222229,
+  "inference_time_s_per_sample": 1.5932539282324108e-05,
+  "best_hp": {
+    "bandwidth": 2.094013887393743,
+    "exponent": 0.9045012539746526,
+    "kernel": "l1",
+    "reg": 0.05141096648805745,
+    "diag": false,
+    "bandwidth_mode": "constant",
+    "iters": 5,
+    "M_batch_size": 1000,
+    "max_leaf_size": 5256
+  },
+  "n_trials": 25,
+  "extra": {
+    "tune_time_s": 42.11659216880798,
+    "model_extra": {}
+  },
+  "error": null
+}

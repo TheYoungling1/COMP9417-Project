@@ -1,0 +1,32 @@
+{
+  "dataset": "ida2016",
+  "model": "catboost",
+  "task": "binary",
+  "n_train": 36000,
+  "n_val": 12000,
+  "n_test": 12000,
+  "d": 170,
+  "primary_metric": "auc_roc",
+  "test_metrics": {
+    "accuracy": 0.9936666666666667,
+    "auc_roc": 0.9918427966101695
+  },
+  "val_primary": 0.9886779661016949,
+  "train_time_s": 3.127474069595337,
+  "inference_time_s_per_sample": 4.801154136657715e-07,
+  "best_hp": {
+    "iterations": 2000,
+    "depth": 9,
+    "learning_rate": 0.13726999259085554,
+    "l2_leaf_reg": 4.374758610283275,
+    "bagging_temperature": 0.854676215846867,
+    "border_count": 64,
+    "early_stopping_rounds": 50
+  },
+  "n_trials": 30,
+  "extra": {
+    "tune_time_s": 65.13896369934082,
+    "model_extra": {}
+  },
+  "error": null
+}

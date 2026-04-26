@@ -1,0 +1,32 @@
+{
+  "dataset": "appliances_energy",
+  "model": "catboost",
+  "task": "regression",
+  "n_train": 11841,
+  "n_val": 3947,
+  "n_test": 3947,
+  "d": 27,
+  "primary_metric": "rmse",
+  "test_metrics": {
+    "rmse": 66.9634766974125,
+    "r2": 0.5519070258023853
+  },
+  "val_primary": 69.75672150212728,
+  "train_time_s": 11.059070110321045,
+  "inference_time_s_per_sample": 3.5367134042048353e-06,
+  "best_hp": {
+    "iterations": 2000,
+    "depth": 9,
+    "learning_rate": 0.05105823178669674,
+    "l2_leaf_reg": 0.06603853650303174,
+    "bagging_temperature": 0.35339613832696065,
+    "border_count": 254,
+    "early_stopping_rounds": 50
+  },
+  "n_trials": 30,
+  "extra": {
+    "tune_time_s": 171.1941294670105,
+    "model_extra": {}
+  },
+  "error": null
+}

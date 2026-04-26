@@ -1,0 +1,14 @@
+{
+  "dataset": "ida2016",
+  "model": "random_forest",
+  "n_subsample": 5000,
+  "n_train_actual": 5000,
+  "n_test": 12000,
+  "train_time_s": 0.8413636684417725,
+  "inference_time_s_per_sample": 1.131129264831543e-05,
+  "test_metrics": {
+    "accuracy": 0.9896666666666667,
+    "auc_roc": 0.9850605932203389
+  },
+  "primary_metric": "auc_roc"
+}

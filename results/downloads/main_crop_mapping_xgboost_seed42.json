@@ -1,0 +1,34 @@
+{
+  "dataset": "crop_mapping",
+  "model": "xgboost",
+  "task": "multiclass",
+  "n_train": 30000,
+  "n_val": 10000,
+  "n_test": 10000,
+  "d": 174,
+  "primary_metric": "accuracy",
+  "test_metrics": {
+    "accuracy": 0.991,
+    "auc_roc": 0.999858504401706
+  },
+  "val_primary": 0.9947,
+  "train_time_s": 40.03457760810852,
+  "inference_time_s_per_sample": 1.9585752487182618e-05,
+  "best_hp": {
+    "n_estimators": 2000,
+    "max_depth": 3,
+    "learning_rate": 0.15974619391962327,
+    "subsample": 0.6910099979503771,
+    "colsample_bytree": 0.7171908665059407,
+    "reg_alpha": 5.79643470034865e-06,
+    "reg_lambda": 1.5846172905745413e-05,
+    "min_child_weight": 5,
+    "early_stopping_rounds": 50
+  },
+  "n_trials": 40,
+  "extra": {
+    "tune_time_s": 3919.5757055282593,
+    "model_extra": {}
+  },
+  "error": null
+}

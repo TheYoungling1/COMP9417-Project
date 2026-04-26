@@ -1,0 +1,32 @@
+{
+  "dataset": "seoul_bike",
+  "model": "catboost",
+  "task": "regression",
+  "n_train": 5256,
+  "n_val": 1752,
+  "n_test": 1752,
+  "d": 12,
+  "primary_metric": "rmse",
+  "test_metrics": {
+    "rmse": 225.66036860678176,
+    "r2": 0.877779762899519
+  },
+  "val_primary": 206.91657209678684,
+  "train_time_s": 5.185882329940796,
+  "inference_time_s_per_sample": 1.8741442188280358e-06,
+  "best_hp": {
+    "iterations": 2000,
+    "depth": 8,
+    "learning_rate": 0.03137429561112995,
+    "l2_leaf_reg": 0.11467549994827546,
+    "bagging_temperature": 0.36457682165884286,
+    "border_count": 64,
+    "early_stopping_rounds": 50
+  },
+  "n_trials": 30,
+  "extra": {
+    "tune_time_s": 166.5356776714325,
+    "model_extra": {}
+  },
+  "error": null
+}

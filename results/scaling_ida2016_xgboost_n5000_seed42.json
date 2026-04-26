@@ -1,0 +1,14 @@
+{
+  "dataset": "ida2016",
+  "model": "xgboost",
+  "n_subsample": 5000,
+  "n_train_actual": 5000,
+  "n_test": 12000,
+  "train_time_s": 1.1040608882904053,
+  "inference_time_s_per_sample": 9.532769521077474e-07,
+  "test_metrics": {
+    "accuracy": 0.9894166666666667,
+    "auc_roc": 0.9876332627118645
+  },
+  "primary_metric": "auc_roc"
+}
