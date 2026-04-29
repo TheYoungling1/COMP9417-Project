@@ -37,9 +37,10 @@ for li, (ax, diag) in enumerate(zip(axes, diagonals)):
     ypos = np.arange(len(labels))
     ax.barh(ypos, vals, color=colors, edgecolor="black", linewidth=0.4)
     ax.set_yticks(ypos)
-    ax.set_yticklabels(labels, fontsize=8)
-    ax.set_xlabel("AGOP diagonal entry (normalised)")
-    ax.set_title(f"Leaf {li}")
+    ax.set_yticklabels(labels, fontsize=11)
+    ax.tick_params(axis="x", labelsize=10)
+    ax.set_xlabel("AGOP diagonal entry (normalised)", fontsize=14)
+    ax.set_title(f"Leaf {li}", fontsize=14, fontweight="bold")
     ax.grid(axis="x", alpha=0.3, linewidth=0.4)
     ax.set_axisbelow(True)
     # Annotate random features with their rank
@@ -48,10 +49,10 @@ for li, (ax, diag) in enumerate(zip(axes, diagonals)):
         if lab in random_features:
             display_rank = n - i  # because we reversed for display
             ax.text(vals[i] + 0.01, i, f"  ← rank {display_rank}/{n} (random noise)",
-                    va="center", fontsize=8, color="#d62728")
+                    va="center", fontsize=10, color="#d62728")
 
 fig.suptitle("Per-leaf AGOP diagonal — all 27 features per leaf (Appliances Energy, tuned-HP xRFM). Red bars = injected random noise.",
-             fontsize=10)
+             fontsize=13)
 fig.tight_layout()
 fig.savefig(OUT, dpi=300, bbox_inches="tight")
 plt.close(fig)

@@ -1,0 +1,32 @@
+{
+  "dataset": "ida2016",
+  "model": "xgboost",
+  "scaling_kind": "tuned_frozen_full_n",
+  "hp_source": "results/downloads/main_ida2016_xgboost_seed42.json",
+  "hp": {
+    "n_estimators": 2000,
+    "max_depth": 8,
+    "learning_rate": 0.00357647851379167,
+    "subsample": 0.8739461643053529,
+    "colsample_bytree": 0.7504273955092581,
+    "reg_alpha": 0.40769679966924793,
+    "reg_lambda": 9.650554673574462,
+    "min_child_weight": 10,
+    "early_stopping_rounds": 50,
+    "random_state": 42
+  },
+  "preprocessing": "fit_on_subsample_train_only",
+  "n_subsample": 20000,
+  "n_train_actual": 20000,
+  "n_train_full_available": 36000,
+  "n_val": 12000,
+  "n_test": 12000,
+  "train_time_s": 31.97233748435974,
+  "inference_time_s_per_sample": 2.3252387841542563e-05,
+  "test_metrics": {
+    "accuracy": 0.9916666666666667,
+    "auc_roc": 0.9917576271186441
+  },
+  "primary_metric": "auc_roc",
+  "model_extra": {}
+}

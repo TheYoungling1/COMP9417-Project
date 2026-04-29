@@ -1,13 +1,15 @@
 # xRFM: An Empirical and Interpretive Study of a Feature-Learning Kernel Machine for Tabular Data
 
-**Group:** [Group Name]
-**Members:** [Name 1 (zID)], [Name 2 (zID)], [Name 3 (zID)], ...
+**Group:** Project-1
+**Members:** Haitao Gao (z5506409), Vladimir Pak (z5686616), Manav Garg (z5610871), Aaryash Bharadwaj (z5689921), John Zhang (z5591121)
 
 ---
 
 ## 1. Introduction
 
-Tabular data resists deep learning: targets often jump abruptly along feature axes, scales are heterogeneous, and many columns are uninformative — properties gradient-boosted decision trees (GBDTs) handle naturally [Grinsztajn et al., 2022]. Classical kernel methods do not: the kernel function fixes feature similarity *before* training (so it cannot learn that some features matter more than others), and kernel ridge regression costs $O(n^3)$, becoming intractable above ~70k samples. **xRFM** [Beaglehole et al., 2025] tackles both. An inner Recursive Feature Machine [Radhakrishnan et al., 2024] learns which features matter via the Average Gradient Outer Product (AGOP) — a matrix capturing how sensitive its predictions are to each input — and uses it to reshape the kernel. An outer balanced binary tree splits the data along the top AGOP eigenvector of a locally-fitted RFM, bringing training to $O(n \log n)$ and producing a separate AGOP per leaf for subpopulation interpretability. We test xRFM on five UCI datasets verified absent from both the TALENT benchmark and xRFM's meta-test suite, against XGBoost, Random Forest, and CatBoost, asking three questions: *(i)* does xRFM's accuracy advantage on smooth tabular data hold on independent datasets; *(ii)* is per-leaf AGOP a useful interpretability tool relative to PCA, mutual information, and permutation importance, particularly at distinguishing real features from injected noise; *(iii)* does the $O(n \log n)$ training-time scaling hold empirically? §2 formalises xRFM, §3 presents results, §4 connects findings to theory, §5 concludes.
+Tabular data resists deep learning: targets often jump abruptly along feature axes, scales are heterogeneous, and many columns are uninformative; gradient-boosted decision trees (GBDTs) handle these properties naturally [Grinsztajn et al., 2022]. Classical kernel methods do not displace them either: the kernel function fixes feature similarity *before* training (so it cannot learn that some features matter more than others), and kernel ridge regression costs $O(n^3)$, becoming intractable above ~70k samples.
+
+**xRFM** [Beaglehole et al., 2025] tackles both limits. An inner Recursive Feature Machine [Radhakrishnan et al., 2024] learns which features matter via the Average Gradient Outer Product (AGOP), a matrix capturing how sensitive its predictions are to each input, and uses it to reshape the kernel. An outer balanced binary tree splits the data along the top AGOP eigenvector of a locally-fitted RFM, bringing training to $O(n \log n)$ and producing a separate AGOP per leaf for subpopulation interpretability. We test xRFM on five UCI datasets (verified absent from both the TALENT benchmark and xRFM's meta-test suite) against XGBoost, Random Forest, and CatBoost. We find xRFM is competitive on smooth-target tasks (Appliances Energy, Crop Mapping), trails on rule-like and small-$n$ problems (Seoul Bike, HCC), and is more hyperparameter-sensitive than CatBoost on imbalanced high-dimensional data (IDA2016), broadly consistent with the inductive-bias predictions of Grinsztajn et al. (2022).
 
 ## 2. Methodology
 
@@ -21,18 +23,18 @@ $$
 
 The result is a $d \times d$ matrix $M$ whose entries summarise the model's sensitivity. For any unit vector $v$, the quadratic form $v^\top M v$ measures how strongly $\hat f$ responds when its input moves along direction $v$. Two readouts of $M$ answer different questions:
 
-- **Diagonal entries $M_{ii}$** give per-feature sensitivity. A large $M_{ii}$ means the model's output changes sharply when feature $i$ changes, holding the others fixed — a feature-importance score conceptually similar to a variance-based first-order sensitivity index.
-- **Top eigenvectors of $M$** give the directions in feature space that the model actually uses (the *active subspace* of Constantine et al., 2014). The top eigenvector $v_1$ is a signed linear combination of features — positive and negative loadings push the prediction in opposite directions — capturing *joint* structure that the diagonal alone misses. Beaglehole et al. (2025, Fig. 7C) demonstrate this on Breast Cancer, where the top eigenvector identifies a signed pair of features driving malignancy scores.
+- **Diagonal entries $M_{ii}$** give per-feature sensitivity. A large $M_{ii}$ means the model's output changes sharply when feature $i$ changes, holding the others fixed; this is a feature-importance score conceptually similar to a variance-based first-order sensitivity index.
+- **Top eigenvectors of $M$** give the directions in feature space that the model actually uses (the *active subspace* of Constantine et al., 2014). The top eigenvector $v_1$ is a signed linear combination of features (positive and negative loadings push the prediction in opposite directions), capturing *joint* structure that the diagonal alone misses. Beaglehole et al. (2025, Fig. 7C) demonstrate this on Breast Cancer, where the top eigenvector identifies a signed pair of features driving malignancy scores.
 
-**How AGOP compares to other importance methods.** The closest alternatives all answer slightly different questions. *PCA* finds high-variance directions of $x$ but ignores $y$, so its directions need not be predictive at all. *Mutual information* $I(X_i; Y)$ is model-free and easy to interpret per-feature, but cannot capture joint structure and requires density estimation. *Permutation importance* shuffles a feature and measures the loss change — black-box and intuitive, but known to behave poorly when features are correlated. AGOP sits at a different point on the trade-off: it is supervised (it depends on $\hat f$), joint (off-diagonal entries encode interactions), and computed in a single forward/backward pass. The cost is that AGOP inherits the model's biases: if $\hat f$ overfits noise, AGOP will assign that noise apparent importance. We see exactly this in §3.2.
+**How AGOP compares to other importance methods.** The closest alternatives all answer slightly different questions. *PCA* finds high-variance directions of $x$ but ignores $y$, so its directions need not be predictive at all. *Mutual information* $I(X_i; Y)$ is model-free and easy to interpret per-feature, but cannot capture joint structure and requires density estimation. *Permutation importance* shuffles a feature and measures the loss change; it is black-box and intuitive, but known to behave poorly when features are correlated. AGOP sits at a different point on the trade-off: it is supervised (it depends on $\hat f$), joint (off-diagonal entries encode interactions), and computed in a single forward/backward pass. The cost is that AGOP inherits the model's biases: if $\hat f$ overfits noise, AGOP will assign that noise apparent importance. We see exactly this in §3.2.
 
 ### 2.2 The xRFM Algorithm
 
 xRFM nests an iterative kernel-ridge RFM inside the leaves of a balanced binary tree whose internal splits use an AGOP-based supervised criterion.
 
-**Tree construction (Alg. A.2).** Each internal node decides how to split its data. Given a node containing more than $L_{\max}$ points, xRFM trains a small RFM on a subsample and asks: *which direction in feature space does this RFM care about most?* That direction is the top eigenvector $v_1$ of the local AGOP. Every point in the node is then projected onto $v_1$ and split at the **median**, ensuring the tree stays balanced. The procedure recurses until every leaf has at most $L_{\max}$ points. Median splitting is what distinguishes xRFM from prior AGOP-based trees and is what guarantees $O(n \log n)$ training: each level halves the data, and the tree depth is $O(\log n)$.
+**Tree construction.** Each internal node decides how to split its data. Given a node containing more than $L_{\max}$ points, xRFM trains a small RFM on a subsample and asks: *which direction in feature space does this RFM care about most?* That direction is the top eigenvector $v_1$ of the local AGOP. Every point in the node is then projected onto $v_1$ and split at the **median**, ensuring the tree stays balanced. The procedure recurses until every leaf has at most $L_{\max}$ points. Median splitting is what distinguishes xRFM from prior AGOP-based trees and is what guarantees $O(n \log n)$ training: each level halves the data, and the tree depth is $O(\log n)$.
 
-**Leaf training (Alg. A.1).** At each leaf, an RFM is fitted using the generalised kernel $K_{p,q}(x, x') = \exp(-\|x - x'\|_p^q / L^q)$ (Schoenberg, 1942) for $0 < q \le p \le 2$. Two cases matter for our experiments: $q = 2$ recovers the rotation-invariant Laplace kernel (the library's `l2` mode), and $q = p$ gives an axis-aligned product kernel (`l1`). Starting with $M_0 = I$, the RFM iteration alternates two steps for up to $\tau \le 10$ rounds: (a) reshape inputs through the current AGOP via $x \to M_t^{1/2} x$; (b) solve kernel ridge regression $(K + \lambda I)\alpha_t = y$ on the reshaped inputs; (c) recompute AGOP from the resulting model; (d) normalise $M \leftarrow M / (\epsilon + \max_{ij}|M_{ij}|)$ to keep its scale bounded. We retain the iteration with the lowest *validation* error rather than running to convergence.
+**Leaf training.** At each leaf, an RFM is fitted using the generalised kernel $K_{p,q}(x, x') = \exp(-\|x - x'\|_p^q / L^q)$ (Schoenberg, 1942) for $0 < q \le p \le 2$. Two cases matter for our experiments: $q = 2$ recovers the rotation-invariant Laplace kernel (the library's `l2` mode), and $q = p$ gives an axis-aligned product kernel (`l1`). Starting with $M_0 = I$, the RFM iteration alternates two steps for up to $\tau \le 10$ rounds: (a) reshape inputs through the current AGOP via $x \to M_t^{1/2} x$; (b) solve kernel ridge regression $(K + \lambda I)\alpha_t = y$ on the reshaped inputs; (c) recompute AGOP from the resulting model; (d) normalise $M \leftarrow M / (\epsilon + \max_{ij}|M_{ij}|)$ to keep its scale bounded. We retain the iteration with the lowest *validation* error rather than running to convergence.
 
 **Inference.** A test point $x^\star$ is routed through the tree (hard or soft median thresholds) to its leaf $\ell$, then predicted as $\hat y = K(x^\star \odot M_\ell^{1/2}, X_{M_\ell}) \alpha_\ell$. A single tree, with one predictor per test point and no ensembling.
 
@@ -54,11 +56,9 @@ xRFM nests an iterative kernel-ridge RFM inside the leaves of a balanced binary 
 
 **Preprocessing.** Median imputation for numerics, mode imputation for categoricals. For kernel methods (xRFM): standard-scaled numerics + one-hot-encoded categoricals. For tree ensembles: numerics plus ordinal-encoded categoricals (no standardisation, preserving split structure). CatBoost receives native categorical indices.
 
-**Hyperparameter tuning.** Optuna TPE sampler on the validation split, model-specific trial budgets (xRFM 25, XGBoost 40, Random Forest 20, CatBoost 30). xRFM search space follows Table A.1 of the xRFM paper: bandwidth $L \in [1,200]$ log-uniform, ridge $\lambda \in [10^{-6},1]$ log-uniform, exponent $p \in [0.7,1.4]$, kernel $\in \{K_{p,2},K_{p,p}\}$, diagonal $\in \{\text{True},\text{False}\}$. Final models are trained on the train set and evaluated on held-out test.
+**Hyperparameter tuning.** Optuna TPE sampler optimises the validation-split primary metric (RMSE for regression, AUC-ROC for binary, accuracy for multiclass) with model-specific trial budgets (xRFM 25, XGBoost 40, CatBoost 30, Random Forest 20). xRFM gets fewer trials because each kernel-ridge solve is the wall-clock bottleneck. The configuration with the best validation objective is retrained on the train split and evaluated once on held-out test. Full search spaces, fixed knobs, and per-dataset selected HPs are in Appendix B. Note that `max_leaf_size = min(60000, n_train)` forces xRFM into a single-leaf-RFM regime on all five main-comparison datasets; the tree component is engaged only in the §3.2 interpretability run (2 leaves on Appliances) and at $n=36k$ in §3.3.
 
 **Metrics.** Regression: RMSE (primary) and $R^2$. Classification: Accuracy and AUC-ROC (macro-OvR for multiclass). Plus wall-clock training time and per-sample inference time.
-
-**Compute.** All experiments ran on Modal A10G GPU instances with a CUDA 12.4 / Python 3.12 container. We initially included TabPFN-v2 but the official `tabpfn` package requires interactive license acceptance for weight download; in our headless pipeline we replaced it with CatBoost, which is also more comparable to the other GBDT methods.
 
 ## 3. Results
 
@@ -66,113 +66,107 @@ xRFM nests an iterative kernel-ridge RFM inside the leaves of a balanced binary 
 
 Tables 2 and 3 report final test-set metrics for all four models on all five datasets.
 
-**Table 2. Regression results (lower RMSE is better).**
+**Table 2. Regression results (lower RMSE is better; best per dataset in bold). Train and Inf are wall-clock training time (s) and per-sample inference time (µs).**
 
-| Dataset           | Model    |   RMSE |    R² |   Train (s) |   Inf. ($\mu$s/sample) |
-|:------------------|:---------|-------:|------:|------------:|-------------------:|
-| Appliances Energy | xRFM     |  **65.29** | **0.574** |        11.5 |               26.0 |
-| Appliances Energy | XGBoost  |  65.75 | 0.568 |        41.7 |               94.8 |
-| Appliances Energy | CatBoost |  66.96 | 0.552 |        11.1 |                3.5 |
-| Appliances Energy | RF       |  72.61 | 0.473 |         1.7 |               41.4 |
-| Seoul Bike        | CatBoost | **225.66** | **0.878** |         5.2 |                1.9 |
-| Seoul Bike        | XGBoost  | 232.32 | 0.870 |         5.4 |               37.2 |
-| Seoul Bike        | xRFM     | 238.44 | 0.864 |         2.1 |               15.9 |
-| Seoul Bike        | RF       | 245.64 | 0.855 |         0.5 |               57.4 |
+\begingroup\footnotesize
 
-**Table 3. Classification results (higher Accuracy / AUC-ROC is better).**
+| Dataset | Metric | xRFM | XGBoost | CatBoost | RF |
+|:--------|:-------|-----:|--------:|---------:|---:|
+| Appliances Energy | RMSE/R² | **65.29/0.574** | 65.75/0.568 | 66.96/0.552 | 72.61/0.473 |
+|                   | Train/Inf | 11.5/26 | 41.7/95 | 11.1/**3.5** | **1.7**/41 |
+| Seoul Bike        | RMSE/R² | 238.44/0.864 | 232.32/0.870 | **225.66/0.878** | 245.64/0.855 |
+|                   | Train/Inf | 2.1/16 | 5.4/37 | 5.2/**1.9** | **0.5**/57 |
 
-| Dataset      | Model    |   Accuracy | AUC-ROC   |   Train (s) |   Inf. ($\mu$s/sample) |
-|:-------------|:---------|-----------:|:----------|------------:|-------------------:|
-| HCC Survival | RF       |     **0.8485** | **0.8500**    |         0.9 |             3666.9 |
-| HCC Survival | XGBoost  |     0.8182 | 0.8346    |         0.0 |               18.7 |
-| HCC Survival | CatBoost |     0.7879 | 0.8192    |         0.6 |               46.6 |
-| HCC Survival | xRFM     |     0.7576 | 0.8000    |         0.1 |               50.5 |
-| IDA2016      | CatBoost |     **0.9937** | 0.9918    |         3.1 |                **0.5** |
-| IDA2016      | XGBoost  |     0.9929 | **0.9928**    |        52.1 |               30.2 |
-| IDA2016      | RF       |     0.9918 | 0.9893    |         5.8 |               15.1 |
-| IDA2016      | xRFM     |     0.9897 | 0.9898    |        16.9 |                5.9 |
-| Crop Mapping | xRFM     |     **0.9945** | **0.9999**    |        12.8 |                **2.6** |
-| Crop Mapping | XGBoost  |     0.9910 | 0.9999    |        40.0 |               19.6 |
-| Crop Mapping | RF       |     0.9892 | 0.9998    |        12.2 |               23.6 |
+\endgroup
 
-*Seeds fixed at 42. TabPFN-v2 omitted throughout (see §2.3 for rationale). CatBoost on Crop Mapping timed out on our 2-hour Modal budget at 7-class × 30k × 174-feature scale and is omitted; the other three models on Crop Mapping all converge. "Best" per dataset in bold; ties broken by AUC for binary, Accuracy for multiclass.*
+**Table 3. Classification results (higher Accuracy / AUC-ROC is better; best per dataset in bold). Train and Inf as in Table 2.**
+
+\begingroup\footnotesize
+
+| Dataset | Metric | xRFM | XGBoost | CatBoost | RF |
+|:--------|:-------|-----:|--------:|---------:|---:|
+| HCC Survival | Acc/AUC | 0.758/0.800 | 0.818/0.835 | 0.788/0.819 | **0.849/0.850** |
+|              | Train/Inf | 0.1/50 | **0.0**/**19** | 0.6/47 | 0.9/3667 |
+| IDA2016      | Acc/AUC | 0.990/0.990 | 0.993/**0.993** | **0.994**/0.992 | 0.992/0.989 |
+|              | Train/Inf | 16.9/5.9 | 52.1/30 | **3.1**/**0.5** | 5.8/15 |
+| Crop Mapping | Acc/AUC | **0.995/1.000** | 0.991/1.000 | n/a | 0.989/1.000 |
+|              | Train/Inf | 12.8/**2.6** | 40.0/20 | n/a | **12.2**/24 |
+
+\endgroup
+
+*Seeds fixed at 42. TabPFN-v2 omitted throughout (see §4 for rationale). CatBoost on Crop Mapping timed out on our 2-hour Modal budget at 7-class × 30k × 174-feature scale and is omitted; the other three models on Crop Mapping all converge. "Best" per dataset in bold; ties broken by AUC for binary, Accuracy for multiclass.*
+
+Tuning chose `kernel=l1` (axis-aligned) for the two lowest-$d$ datasets (Appliances, Seoul Bike) and `kernel=l2` (rotation-invariant) for the three higher-$d$ datasets (HCC, IDA2016, Crop Mapping); per-dataset HPs are in Appendix B.
 
 Observations on the numbers:
 
-**xRFM wins narrowly on the smooth-target datasets.** On Appliances Energy (RMSE 65.29 vs XGBoost's 65.75) and Crop Mapping (Acc 0.9945 vs XGBoost's 0.9910) — both regimes where the target varies continuously with the inputs and AGOP re-weighting can pay off. On Crop Mapping the win is also Pareto-dominant: 2.6 $\mu$s/sample inference is $\approx 8$–$15\times$ faster than XGBoost or RF.
+**xRFM is competitive on the smooth-target datasets.** On Appliances Energy it obtains the best RMSE in this single split, but the margin over XGBoost is small (65.29 vs 65.75) and should not be over-interpreted without multi-seed error bars. On Crop Mapping, xRFM is best among the completed models, but CatBoost timed out, so this is not evidence that xRFM dominates all GBDT baselines. The inference-time numbers are useful operational context, but they are implementation wall-clock measurements rather than hardware-normalised algorithmic benchmarks.
 
-**The GBDTs win where rules and small-$n$ favour them.** CatBoost narrowly leads on Seoul Bike (all four models within 9% of each other) — the rule-like target (zero rentals when the system is off, season × hour interactions) plays to tree splitting. On HCC Survival, Random Forest leads xRFM by 9 accuracy points; with only 33 test samples, differences under $\pm 6$ accuracy-points are not statistically distinguishable at the 5% level.
+**The GBDTs win where rules and small-$n$ favour them.** CatBoost narrowly leads on Seoul Bike (all four models within 9% of each other); the rule-like target (zero rentals when the system is off, season × hour interactions) plays to tree splitting. On HCC Survival, Random Forest leads xRFM by 9 accuracy points; with only 33 test samples, differences under $\pm 6$ accuracy-points are not statistically distinguishable at the 5% level.
 
-**IDA2016 is the HP-sensitivity story.** Tuned xRFM reaches AUC 0.990, within 0.3 AUC-points of XGBoost (0.9928) and CatBoost (0.9918). The scaling study in §3.3, which uses *default* HPs to isolate the effect of $n$, gives xRFM only 0.978. The 1.2-point tuned-vs-default gap is much larger than the 0.3-point xRFM-vs-GBDT gap, so most of xRFM's apparent loss is HP sensitivity, not algorithmic inferiority. We return to this in §4.
+**IDA2016 is the HP-sensitivity story.** Tuned xRFM reaches AUC 0.990, within 0.3 AUC-points of XGBoost (0.9928) and CatBoost (0.9918). An earlier default-HP sweep gave xRFM only about 0.978, while the tuned frozen-HP scaling rerun in §3.3 reaches 0.989 at full size. The tuned-vs-default gap is larger than the tuned xRFM-vs-GBDT gap, so most of xRFM's apparent loss is HP sensitivity, not algorithmic inferiority. We return to this in §4.
 
 ### 3.2 Interpretability on Appliances Energy
 
 We use Appliances Energy as our interpretability testbed for two reasons. First, it includes two ground-truth random features (`rv1`, `rv2`) injected by the dataset's authors, which gives us a direct test of whether each importance method correctly ranks pure noise as low importance. Second, the 27 features have physical meanings (kitchen humidity, outdoor temperature, and so on), which lets us sanity-check the rankings against domain intuition.
 
-**Setup.** We extract per-leaf AGOP diagonals from the xRFM trained with the Optuna-tuned hyperparameters from §3.1 (`kernel='l1', bandwidth=12.72, exponent=0.79, reg=0.061, diag=True`). With `diag=True` the Mahalanobis matrix is constrained to be diagonal, so we report only per-feature sensitivities — the paper's signed-eigenvector analysis (e.g., Fig. 7C on Breast Cancer) requires `diag=False` and is left as a follow-up. We compare AGOP against three alternatives chosen to span the importance-method design space: PCA loadings (an unsupervised baseline), mutual information (model-free, supervised), and signed permutation importance computed on an XGBoost proxy (black-box, supervised). Figure 1 ranks the top-15 features by AGOP and overlays the other three methods. Figure 2 shows AGOP per leaf, replicating the multi-leaf comparison the paper performs on NYC Taxi data (Beaglehole et al. 2025, Fig. 7B).
+**Setup.** We extract per-leaf AGOP diagonals from the xRFM trained with the Optuna-tuned hyperparameters from §3.1 (`kernel='l1', bandwidth=12.72, exponent=0.79, reg=0.061, diag=True`). With `diag=True` the Mahalanobis matrix is constrained to be diagonal, so we report only per-feature sensitivities; the paper's signed-eigenvector analysis (e.g., Fig. 7C on Breast Cancer) requires `diag=False` and is left as a follow-up. We compare AGOP against three alternatives chosen to span the importance-method design space: PCA loadings (an unsupervised baseline), mutual information (model-free, supervised), and signed permutation importance computed on an XGBoost proxy (black-box, supervised). Figure 1 ranks the top-15 features by AGOP and overlays the other three methods. Figure 2 shows AGOP per leaf, replicating the multi-leaf comparison the paper performs on NYC Taxi data (Beaglehole et al. 2025, Fig. 7B).
 
 ![Feature importance comparison on Appliances Energy. [*] marks the two injected random features.](../figures/interpretability_appliances.png){ width=100% }
 
 ![Per-leaf AGOP diagonal for the tuned-HP xRFM. The two leaves identify different humidity sensors as locally most important: RH_6 in leaf 0 and RH_8 in leaf 1.](../figures/per_leaf_agop_appliances.png){ width=100% }
 
-**The random-feature test.** The cleanest cross-method comparison is how each one ranks `rv1` and `rv2` — features that, by construction, carry zero signal. Out of $d = 27$ features:
-
-| Method | Rank of rv1 | Rank of rv2 |
-|--------|-------------|-------------|
-| AGOP diagonal (tuned-HP xRFM) | 21 / 27 | 20 / 27 |
-| PCA loading | **2 / 27** (wrongly top) | **1 / 27** (wrongly top) |
-| Mutual information | 26 / 27 (correct) | 27 / 27 (correct) |
-| Permutation (XGBoost, signed) | 27 / 27 (correct) | 26 / 27 (correct) |
-
-Mutual information and permutation cleanly identify the random features as least important. AGOP correctly puts them in the bottom third, but is less decisive than the model-free methods. PCA fails outright, ranking the noise features as the *most* important — because random uniforms are statistically independent of the other (correlated) sensor readings, they contribute disproportionately to the input covariance.
+**The random-feature test.** The cleanest cross-method comparison is how each method ranks `rv1` and `rv2`, features that, by construction, carry zero signal. Out of $d=27$ features, mutual information ranks them 26/27 and 27/27, and signed permutation importance ranks them 27/27 and 26/27: both cleanly identify the noise. AGOP places them at 21/27 and 20/27, correct in direction but less decisive than the model-free methods. PCA fails outright, ranking them at **2/27 and 1/27** (wrongly at the top), because random uniforms are statistically independent of the other (correlated) sensor readings and so contribute disproportionately to the input covariance.
 
 *(AGOP and PCA each assign `rv1`, `rv2` exactly equal scores, so the rank distinctions in the table are tie-break artefacts. Per-leaf AGOP ranks are 15–16/27 in leaf 0 and 22–23/27 in leaf 1, so noise demotion strengthens with deeper splits.)*
 
-**What the random features tell us about AGOP.** Two findings sit beneath the ranks. First, AGOP gives `rv1` and `rv2` exactly the same score because the model treats them as interchangeable noise — the AGOP iteration converges to the same diagonal entry by symmetry. The non-zero value (0.169 in leaf 0, 0.122 in leaf 1) is a residual that a finite-iteration kernel-ridge solver cannot drive to zero: the gap between "model-aware" and "model-free" measures (MI assigns clean zeros). Second, AGOP's noise rejection depends on the underlying kernel fit: re-running with default HPs (`bandwidth=10, kernel='l2', diag=False`) moves `rv1`, `rv2` to ranks 12–13 instead of 20–21 — a nine-position drop in discrimination. AGOP only sees what the model sees, so we use it to interpret what a *tuned* model has learned, not as a model-free importance measure.
+**What the random features tell us about AGOP.** Two findings sit beneath the ranks. First, AGOP gives `rv1` and `rv2` exactly the same score because the model treats them as interchangeable noise; the AGOP iteration converges to the same diagonal entry by symmetry. The non-zero value (0.169 in leaf 0, 0.122 in leaf 1) is a residual that a finite-iteration kernel-ridge solver cannot drive to zero: the gap between "model-aware" and "model-free" measures (MI assigns clean zeros). Second, AGOP's noise rejection depends on the underlying kernel fit: re-running with default HPs (`bandwidth=10, kernel='l2', diag=False`) moves `rv1`, `rv2` to ranks 12–13 instead of 20–21, a nine-position drop in discrimination. AGOP only sees what the model sees, so we use it to interpret what a *tuned* model has learned, not as a model-free importance measure.
 
 **Per-leaf structure shows subpopulation-specific features.** The two leaves of the tuned tree concentrate on different humidity sensors: leaf 0 weights RH_6 (kitchen humidity) maximally (AGOP $= 1.00$), while leaf 1 weights RH_8 (parents' room humidity) maximally ($= 1.00$). T6 (outdoor temperature) and RH_5 (bathroom humidity) are high in both. This mirrors the pattern Beaglehole et al. (2025, Fig. 7B) report for NYC Taxi, where different tree leaves discovered different locally-relevant features. With only two leaves on Appliances we see the effect on a small scale; deeper trees on larger datasets would amplify it.
 
-**Where the methods agree on real features.** Both supervised methods that pass the noise test (AGOP and signed permutation) identify a humidity-dominated mix of sensors. AGOP's top features are RH_6, T6, T_out, RH_5, RH_8; permutation's top-5 are RH_4, RH_2, RH_1, RH_8, T4 — four of those five appear in AGOP's top-10. They disagree on which humidity sensor matters most but agree on the qualitative story: indoor humidity, not outdoor temperature alone, dominates the energy signal.
+**Where the methods agree on real features.** Both supervised methods that pass the noise test (AGOP and signed permutation) identify a humidity-dominated mix of sensors. AGOP's top features are RH_6, T6, T_out, RH_5, RH_8; permutation's top-5 are RH_4, RH_2, RH_1, RH_8, T4, and four of those five appear in AGOP's top-10. They disagree on which humidity sensor matters most but agree on the qualitative story: indoor humidity, not outdoor temperature alone, dominates the energy signal.
 
 ### 3.3 Scaling study on IDA2016
 
-Figure 3 plots test AUC-ROC and training time against subsampled training size $n \in \{1k, 2.5k, 5k, 10k, 20k, 36k\}$, with the test set held fixed.
+Figure 3 plots test AUC-ROC and training time against subsampled training size $n \in \{1k, 2.5k, 5k, 10k, 20k, 36k\}$, with the test set held fixed. Unlike the earlier default-HP sweep, this rerun freezes each model's Optuna-selected full-$n$ hyperparameters from §3.1 and refits preprocessing on each subsampled training set only. The AUC panel uses a broken y-axis so the XGBoost $n=1k$ chance-level point remains visible while the $0.98+$ comparison band is readable.
 
-![Test AUC-ROC (left) and training time (right) vs. training size on IDA2016.](../figures/scaling_ida2016.png){ width=100% }
+![Test AUC-ROC with broken y-axis (left) and training time (right) vs. training size on IDA2016 with full-n tuned hyperparameters frozen.](../figures/scaling_ida2016_tuned.png){ width=100% }
 
-**Important:** all four models use fixed (non-tuned) hyperparameters in this study, to isolate the effect of $n$. xRFM's corresponding *tuned* result is AUC 0.990 (Table 3), so the values below overstate the xRFM / GBDT gap relative to the main comparison. Three observations:
+This design better isolates the effect of training-set size than the default-HP sweep, but it is still single-seed and should not be read as an asymptotic complexity test. Three observations:
 
-1. **Untuned asymptotic performance.** CatBoost reaches AUC 0.993, XGBoost and Random Forest $\approx$ 0.99, and **xRFM plateaus at 0.978** with default HPs. The gap narrows to 0.3 AUC-points under HP tuning (Table 3); most of the apparent loss is HP sensitivity, not algorithmic inferiority.
+1. **Tuned sample scaling.** xRFM improves from AUC 0.981 at $n=1k$ to 0.989 at $n=36k$, essentially matching RF at full size (0.989) but remaining below CatBoost (0.992) and XGBoost (0.993). CatBoost is already strong at $n=1k$ (AUC 0.988). XGBoost's full-$n$ tuned configuration fails at $n=1k$ (AUC 0.500) before recovering, showing why frozen-HP scaling should be interpreted as configuration-specific rather than universally sample-efficient.
 
-2. **Sample efficiency.** All four models are within 1.5 AUC-points of their asymptote at $n=1{,}000$; this dataset's decision surface is fundamentally learnable from few samples. CatBoost and XGBoost improve slightly with more data; default-HP xRFM shows essentially flat scaling behaviour.
+2. **Tree engagement is shallow.** Logged xRFM metadata shows one leaf through $n=20k$ and two leaves at $n=36k$, because the library rescales the effective `max_leaf_size` to about 26.6k on the A10G. Thus the sweep mostly measures leaf-RFM behaviour, with only the largest point entering a shallow partitioned regime.
 
-3. **Training time.** xRFM training time climbs from 0.8 s at $n=1k$ to 20.9 s at $n=36k$, a 26.1× growth ratio over a 36× increase in $n$. The endpoint log-log slope is 0.91; the full-range fit is 0.84. The paper's $O(n \log n)$ claim would predict local slopes of 1.10–1.15 and a growth ratio near 54× over the same range, so our measured timings are *sub-linear* (closer to $O(n^{0.84})$) — **not** $O(n \log n)$. We attribute this to operating in the single-leaf regime: at $L_\text{max} = 60{,}000 \ge n_\text{train}$ throughout this study, xRFM never partitions and the inner kernel-ridge solve dominates training. The asymptotic $O(n \log n)$ claim is about the regime where the tree splits, which our experiment does not enter.
+3. **Training time.** xRFM grows from 0.71 s at $n=1k$ to 13.93 s at $n=36k$ (19.6× growth; log-log slope 0.84). It is faster than XGBoost at full size (52.7 s) but slower than CatBoost (4.0 s) and RF (7.4 s). These timings remain wall-clock implementation measurements, not proof of the paper's $O(n \log n)$ asymptotic claim.
 
 ## 4. Discussion
 
-**xRFM's results match theory on four datasets, with one surprise.** The theoretical argument for feature-learning kernel methods is that they should win when the target varies *smoothly* with the inputs — small changes in features producing small changes in the output — because the model can profit from re-weighting the directions that matter. We see this on Appliances Energy, where energy consumption varies continuously with humidity and temperature readings: xRFM beats every GBDT by a hair. The same story holds on Crop Mapping, where the 174 satellite bands are physically continuous and correlated, and xRFM's AGOP re-weighting again edges out the trees. The mirror image is Seoul Bike: rentals follow sharp rules (zero when the system is off) and multiplicative interactions (season × hour), exactly the structure trees split on naturally — and the GBDTs win, narrowly.
+**The results are broadly consistent with the inductive-bias story, but not decisive.** The theoretical argument for feature-learning kernel methods is that they should be strongest when the target varies *smoothly* with the inputs because the model can profit from re-weighting the directions that matter. Appliances Energy and Crop Mapping are consistent with that story, but the Appliances margin over XGBoost is small and Crop Mapping lacks a completed CatBoost comparison. The mirror image is Seoul Bike: rentals follow sharp rules (zero when the system is off) and multiplicative interactions (season × hour), exactly the structure trees split on naturally, and the GBDTs win, narrowly.
 
-The surprise is HCC Survival. Classical kernel theory says kernels should dominate trees in the small-$n$ regime, since RKHS regularisation provides a strong prior. We expected xRFM to win here. Instead Random Forest beats it by 9 accuracy points. We suspect the cause is AGOP estimation: with only 99 training samples, learning a $49 \times 49$ feature-importance matrix is statistically fragile, and a noisy AGOP feeds back into a noisy reweighting that hurts more than it helps.
+The surprise is HCC Survival. Classical kernel theory says kernels should dominate trees in the small-$n$ regime, since RKHS regularisation provides a strong prior. We expected xRFM to win here. Instead Random Forest beats it by 9 accuracy points. We suspect the cause is AGOP estimation: with only 99 training samples, learning a $108 \times 108$ AGOP matrix (the encoded dimension after one-hot expansion of the 27 categorical features) is statistically fragile, and a noisy AGOP feeds back into a noisy reweighting that hurts more than it helps.
 
-**xRFM is more hyperparameter-sensitive than the GBDTs.** IDA2016 makes this clearest. With HP tuning, xRFM achieves AUC 0.990 — within 0.3 AUC-points of CatBoost and XGBoost. The scaling study in §3.3 (which used *default* HPs to isolate the effect of $n$) gives xRFM AUC 0.978, a 1.2-point drop. CatBoost's defaults sit within 0.1 AUC-points of its tuned result on the same data, so the asymmetry is real. Three structural features of IDA2016 stress kernel methods more than trees, and each matches one of Grinsztajn et al. (2022)'s predictions about why kernels lose on tabular data:
+**xRFM is more hyperparameter-sensitive than the GBDTs.** IDA2016 makes this clearest. With HP tuning, xRFM achieves AUC about 0.990, within 0.3 AUC-points of CatBoost and XGBoost. The earlier default-HP scaling sweep gave xRFM only about 0.978, while the tuned frozen-HP rerun in §3.3 reaches 0.989 at full size. The 1.1–1.2 point gap is primarily a configuration effect. Three structural features of IDA2016 stress kernel methods more than trees, and each matches one of Grinsztajn et al. (2022)'s predictions about why kernels lose on tabular data:
 
 - **Severe class imbalance (1.6% positive).** Kernel ridge regression minimises squared error symmetrically, so it has no built-in mechanism to up-weight the rare class. GBDTs can be told to up-weight the minority directly. xRFM can compensate through bandwidth and ridge tuning, but only if those HPs are actually searched.
 - **170 dimensions, most low-signal.** xRFM has to *learn* via AGOP which features matter; trees ignore irrelevant features for free through split selection.
-- **Heavy missingness (8.3% of cells).** Trees absorb missingness through their split logic — a missing value is just another route through the tree. A smooth kernel needs imputation to be 'right'; wrong imputation directly distorts the similarity measure between points.
+- **Heavy missingness (8.3% of cells).** In our pipeline all models receive median-imputed numeric features, so we did not test native tree missing-value handling. A more defensible hypothesis is that median imputation may distort similarity geometry more for kernels than for split-based models.
+
+**Choice of metrics.** We report RMSE rather than MAE for regression because both Appliances Energy and Crop Mapping have heavy-tailed targets where large errors deserve disproportionate penalty; $R^2$ accompanies RMSE for cross-dataset comparability since target ranges differ by orders of magnitude (Appliances mean 97 Wh vs. Seoul Bike mean 705 rentals). For classification we report both Accuracy and AUC-ROC, but on IDA2016 (1.6% positive) AUC is the load-bearing number, since accuracy $\approx 0.984$ is trivially achievable by always predicting "no failure", while AUC tests rank-ordering of failure probabilities, so the fact that all four models exceed 0.989 says they actually learn the rare class. Inference time per sample is operational context rather than algorithmic benchmark: it is wall-clock on shared cloud hardware and not normalised across implementations. In particular, xRFM was run on GPU (CUDA) while XGBoost, CatBoost, and Random Forest ran on CPU, so the train/inference times in Tables 2–3 reflect a hardware asymmetry alongside algorithmic differences and should not be read as a method-fair complexity comparison.
 
 **AGOP's strength and its cost.** AGOP inherits the model's learned feature sensitivity, which cuts both ways: a well-tuned RFM produces a discriminating AGOP that correctly demotes random noise to ranks 20–21 of 27; a badly-tuned RFM produces an AGOP that places the same noise at 12–13. Mutual information and signed permutation sidestep this dependency. The takeaway: **AGOP for interpreting a tuned model, MI or signed permutation as a model-free sanity check, PCA as a null baseline.**
 
 **Limitations and next steps.**
 
-- **Single-seed results.** All experiments use one fixed seed (42). Small differences — especially on HCC's 33-sample test set — may not survive multi-seed replication. Multi-seed runs would let us put error bars on every comparison.
-- **Restricted kernel-family search.** The paper's full kernel family is $K_{p,q}$ for $0 < q \le p \le 2$, a 2D grid over $(p, q)$. Our HP search varies only a single `exponent` parameter and restricts kernel choice to two slices: `l1` ($K_{p,p}$, axis-aligned) and `l2` ($K_{p,2}$, rotation-invariant). The tuned HPs picked `l1` on Appliances Energy and Seoul Bike, `l2` on the other three datasets (`results/downloads/main_*_xrfm_seed42.json`), so both slices saw use — but sweeping the full $(p, q)$ grid is the natural follow-up.
-- **Single-leaf regime throughout.** Our `max_leaf_size = 60{,}000` is at least as large as $n_\text{train}$ on every dataset, so xRFM never actually partitions; it operates as a single-leaf RFM with AGOP feature learning. This means the tree component of "xRFM" is never engaged in our experiments. Our results therefore characterise the leaf RFM, not the full algorithm — and the paper's $O(n \log n)$ training claim is about the partitioning regime our experiments do not enter (consistent with the sub-linear scaling we observed in §3.3).
+- **Single-seed results.** All experiments use one fixed seed (42). Small differences (especially on HCC's 33-sample test set) may not survive multi-seed replication. Multi-seed runs would let us put error bars on every comparison.
+- **Restricted kernel-family search.** The paper's full kernel family is $K_{p,q}$ for $0 < q \le p \le 2$, a 2D grid over $(p, q)$. Our HP search varies only a single `exponent` parameter and restricts kernel choice to two slices: `l1` ($K_{p,p}$, axis-aligned) and `l2` ($K_{p,2}$, rotation-invariant). The tuned HPs picked `l1` on Appliances Energy and Seoul Bike, `l2` on the other three datasets (`results/downloads/main_*_xrfm_seed42.json`), so both slices saw use, but sweeping the full $(p, q)$ grid is the natural follow-up.
+- **Tree-partitioning regime only lightly tested.** The tuned scaling rerun logs one xRFM leaf through $n=20k$ and two leaves at $n=36k$ after the library rescales effective `max_leaf_size` to about 26.6k. This is useful evidence, but it is still not a clean test of the full partitioned-tree regime. A dedicated follow-up should explicitly sweep smaller `max_leaf_size` values.
 - **TabPFN-v2 omitted.** TabPFN-v2 would be a useful third baseline (a tabular foundation model, neither tree nor kernel). Its license gates weight download behind interactive acceptance, which blocked our headless Modal pipeline.
 - **Shallow interpretability tree.** Both our default-HP and tuned-HP interpretability runs produced only 2 leaves. The richer per-leaf comparison the paper performs on NYC Taxi (Beaglehole et al. 2025, Fig. 7A, with 8 leaves) would require a larger dataset to induce deeper trees.
 
 ## 5. Conclusion
 
-xRFM fills a real gap in the tabular kernel-methods literature as the first feature-learning kernel machine to scale past roughly 70k samples. On our five UCI datasets it matches or exceeds GBDTs on smooth-target tasks (Appliances Energy, Crop Mapping), is competitive with HP tuning on imbalanced high-dimensional classification (IDA2016), and trails on small-$n$ (HCC) and rule-like targets (Seoul Bike) where tree inductive bias is better matched. Its practical differentiator is per-leaf AGOP interpretability — a *supervised* alternative to PCA and a *model-aware* alternative to mutual information — though our random-feature test shows AGOP's noise rejection depends heavily on the quality of the underlying kernel fit. xRFM is a credible complement to GBDTs, especially when interpretability matters, but has not dethroned XGBoost or CatBoost as a reliable first choice.
+xRFM is a credible complement to GBDTs in these experiments, especially where AGOP interpretability is useful. On our five UCI datasets it is competitive on smooth-target tasks (Appliances Energy, Crop Mapping), improves substantially with HP tuning on imbalanced high-dimensional classification (IDA2016), and trails on small-$n$ (HCC) and rule-like targets (Seoul Bike) where tree inductive bias is better matched. However, the evidence is single-seed, only lightly exercises xRFM's tree partitioning, and is not sufficient to establish robust superiority over XGBoost or CatBoost.
 
 ## References
 
@@ -199,7 +193,7 @@ Hourly rental counts in Seoul, Sept 2017 – Nov 2018 ($n=8{,}760$, $d=12$). Tar
 - **Numeric (9):** `Hour` (0–23), `TemperatureC` (−17.8 to 39.4), `Humiditypct` (0–98), `Wind_speed_m/s` (0–7.4), `Visibility_10m` (27–2000), `Dew_point_temperatureC` (−30.6 to 27.2), `Solar_Radiation_MJ/m²` (0–3.52), `Rainfallmm` (0–35), `Snowfall_cm` (0–8.8).
 - **Categorical (3):** `Seasons` (4 levels), `Holiday` (Yes/No), `Functioning_Day` (Yes/No).
 
-The target follows clear rules: rentals are exactly zero whenever the bike system is off (`Functioning_Day=No`); otherwise demand has two daily peaks (morning and evening commutes); and the time-of-day pattern depends strongly on the season. These are exactly the kind of axis-aligned, piecewise-constant patterns that decision trees handle naturally — a structural reason to expect GBDTs to do well here.
+The target follows clear rules: rentals are exactly zero whenever the bike system is off (`Functioning_Day=No`); otherwise demand has two daily peaks (morning and evening commutes); and the time-of-day pattern depends strongly on the season. These are exactly the kind of axis-aligned, piecewise-constant patterns that decision trees handle naturally, which is a structural reason to expect GBDTs to do well here.
 
 ### A.2 Appliances Energy Prediction (UCI 374)
 
@@ -222,10 +216,55 @@ High $d/n \approx 0.30$, which is the report's primary hypothesis for xRFM's und
 
 Heavy-truck Air Pressure System failure prediction ($n=60{,}000$, $d=170$, all numeric). Target: binary (failure/no), **class balance 59,000 : 1,000 (1.67% positive).** **850,015 missing values (8.3% of cells).**
 
-Features are anonymised sensor readings (`aa_000`, `ab_000`, …); the `ag_000`–`ag_009` series are histogram bins of one underlying counter. **Eight columns are >50% missing** (e.g., `br_000` 82%, `bq_000` 81%, `bp_000` 80%). All three properties stress kernel methods specifically. With 170 mostly-uninformative dimensions, xRFM has to *learn* which features matter, whereas trees ignore irrelevant features for free via split selection. With only 1.6% positive class, kernel ridge regression has no built-in mechanism for asymmetric error costs, where GBDTs can be told to up-weight the minority. And with 8.3% of cells missing, tree-based methods absorb missingness through their split logic, whereas a smooth kernel needs the imputation to be 'right'. We expected this dataset to be the hardest of our five for xRFM, and it was.
+Features are anonymised sensor readings (`aa_000`, `ab_000`, …); the `ag_000`–`ag_009` series are histogram bins of one underlying counter. **Eight columns are >50% missing** (e.g., `br_000` 82%, `bq_000` 81%, `bp_000` 80%). All three properties stress kernel methods specifically. With 170 mostly-uninformative dimensions, xRFM has to *learn* which features matter, whereas trees ignore irrelevant features for free via split selection. With only 1.6% positive class, kernel ridge regression has no built-in mechanism for asymmetric error costs, where GBDTs can be told to up-weight the minority. And with 8.3% of cells missing, although tree-based methods can in principle absorb missingness through their split logic, our pipeline imputes upstream (median for numerics, mode for categoricals) for all four models, so the kernel-vs-tree distinction here reduces to how well median imputation preserves geometry, not native missing-value handling. We expected this dataset to be the hardest of our five for xRFM, and it was.
 
 ### A.5 Crop Mapping, Winnipeg (UCI 525)
 
 Crop classification from fused satellite data over Manitoba, 2015–2016 ($n=325{,}834$, stratified-subsampled to $n=50{,}000$; $d=174$, all numeric, no missing). Target: 7 crop classes, with **highly skewed prevalence** (largest class 26.1%; smallest 0.35%, only 175 samples).
 
-Features come from two satellite systems collected at multiple dates: **RADARSAT-2 synthetic aperture radar** (4 polarisation channels — HH, HV, VH, VV — plus derived parameters) and **Landsat-8 optical bands** (visible, near-infrared, short-wave infrared). Raw values span roughly $[-28{,}400, 1{,}089{,}300]$ — the radar measurements are in negative-dB units while optical radiances are large positive numbers — so standardisation is essential. Crucially for our hypothesis, all 174 features are continuous and physically correlated: the kind of smooth, structured feature space where a kernel's similarity-based assumption matches the data well.
+Features come from two satellite systems collected at multiple dates: **RADARSAT-2 synthetic aperture radar** (4 polarisation channels: HH, HV, VH, VV; plus derived parameters) and **Landsat-8 optical bands** (visible, near-infrared, short-wave infrared). Raw values span roughly $[-28{,}400, 1{,}089{,}300]$; the radar measurements are in negative-dB units while optical radiances are large positive numbers, so standardisation is essential. Crucially for our hypothesis, all 174 features are continuous and physically correlated: the kind of smooth, structured feature space where a kernel's similarity-based assumption matches the data well.
+
+## Appendix B: Hyperparameter Tuning Details
+
+**B.1 Optuna setup.** TPE sampler seeded with `random_state=42`. Validation objective: RMSE (minimise) for regression, AUC-ROC (maximise) for binary, accuracy (maximise) for multiclass. The configuration with the best validation objective is retrained on the train split and evaluated once on held-out test.
+
+**B.2 Search spaces and fixed knobs.**
+
+- **xRFM** (25 trials). Tunable: `bandwidth` $\in [1, 200]$ log, `exponent` $\in [0.7, 1.4]$, `kernel` $\in \{$ `l1`, `l2` $\}$, `reg` $\in [10^{-6}, 1]$ log, `diag` $\in \{T, F\}$. Fixed: `iters=5`, `M_batch_size=1000`, `bandwidth_mode=constant`, `max_leaf_size=min(60000, n)`.
+- **XGBoost** (40 trials). Tunable: `max_depth` $\in [3, 12]$, `learning_rate` $\in [10^{-3}, 0.3]$ log, `subsample` $\in [0.5, 1]$, `colsample_bytree` $\in [0.5, 1]$, `reg_alpha` $\in [10^{-8}, 10]$ log, `reg_lambda` $\in [10^{-8}, 10]$ log, `min_child_weight` $\in [1, 10]$. Fixed: `n_estimators=2000` with `early_stopping_rounds=50`.
+- **CatBoost** (30 trials). Tunable: `depth` $\in [4, 10]$, `learning_rate` $\in [10^{-3}, 0.3]$ log, `l2_leaf_reg` $\in [10^{-2}, 10]$ log, `bagging_temperature` $\in [0, 1]$, `border_count` $\in \{32, 64, 128, 254\}$. Fixed: `iterations=2000` with `early_stopping_rounds=50`.
+- **Random Forest** (20 trials). Tunable: `n_estimators` $\in [200, 1000]$, `max_depth` $\in [5, 30]$, `min_samples_split` $\in [2, 20]$, `min_samples_leaf` $\in [1, 10]$, `max_features` $\in \{$ `sqrt`, `log2`, $0.5$ $\}$.
+
+**B.3 Selected HPs per dataset.** Best configurations from Optuna's TPE search (extracted from `results/main_*_seed42.json`). RF abbreviations: `mss`=`min_samples_split`, `msl`=`min_samples_leaf`.
+
+*xRFM:*
+
+- Appliances Energy: `bw`=12.72, `exp`=0.79, `kernel`=l1, `reg`=0.061, `diag`=T
+- Seoul Bike: `bw`=2.09, `exp`=0.90, `kernel`=l1, `reg`=0.051, `diag`=F
+- HCC Survival: `bw`=23.08, `exp`=0.73, `kernel`=l2, `reg`=2.5×10⁻⁶, `diag`=F
+- IDA2016: `bw`=199.3, `exp`=1.27, `kernel`=l2, `reg`=0.95, `diag`=T
+- Crop Mapping: `bw`=4.11, `exp`=1.18, `kernel`=l2, `reg`=5.4×10⁻⁶, `diag`=T
+
+*XGBoost:*
+
+- Appliances Energy: `depth`=12, `lr`=0.042, `sub`=0.98, `col`=0.51, `α`=0.007, `λ`=1.48, `mcw`=2
+- Seoul Bike: `depth`=7, `lr`=0.007, `sub`=0.62, `col`=0.99, `α`=3×10⁻⁶, `λ`=4×10⁻⁴, `mcw`=2
+- HCC Survival: `depth`=5, `lr`=0.253, `sub`=0.83, `col`=0.78, `α`=0.026, `λ`=0.14, `mcw`=2
+- IDA2016: `depth`=8, `lr`=0.004, `sub`=0.87, `col`=0.75, `α`=0.41, `λ`=9.65, `mcw`=10
+- Crop Mapping: `depth`=3, `lr`=0.160, `sub`=0.69, `col`=0.72, `α`=6×10⁻⁶, `λ`=2×10⁻⁵, `mcw`=5
+
+*CatBoost:*
+
+- Appliances Energy: `depth`=9, `lr`=0.051, `l2`=0.066, `bag`=0.35, `border`=254
+- Seoul Bike: `depth`=8, `lr`=0.031, `l2`=0.115, `bag`=0.36, `border`=64
+- HCC Survival: `depth`=8, `lr`=0.057, `l2`=0.012, `bag`=0.97, `border`=32
+- IDA2016: `depth`=9, `lr`=0.137, `l2`=4.37, `bag`=0.85, `border`=64
+- Crop Mapping: timed out (see §3.1).
+
+*Random Forest:*
+
+- Appliances Energy: `n`=652, `depth`=24, `mss`=10, `msl`=1, `max_feat`=sqrt
+- Seoul Bike: `n`=422, `depth`=25, `mss`=12, `msl`=3, `max_feat`=0.5
+- HCC Survival: `n`=796, `depth`=24, `mss`=17, `msl`=1, `max_feat`=log2
+- IDA2016: `n`=599, `depth`=24, `mss`=5, `msl`=7, `max_feat`=log2
+- Crop Mapping: `n`=652, `depth`=24, `mss`=10, `msl`=1, `max_feat`=sqrt

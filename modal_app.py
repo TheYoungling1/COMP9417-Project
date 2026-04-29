@@ -13,8 +13,11 @@ Usage:
     # Run interpretability on Appliances Energy
     modal run modal_app.py::run_interpretability
 
-    # Run scaling experiment on IDA2016
+    # Default-HP scaling experiment on IDA2016
     modal run modal_app.py::run_scaling
+
+    # Tuned-HP scaling (reads main_*_seed42.json best HPs locally; produces Fig. 3)
+    modal run modal_app.py::run_scaling_tuned
 """
 from __future__ import annotations
 
@@ -29,9 +32,7 @@ from pathlib import Path
 import modal
 
 
-# =========== Modal image & volume ===========
-
-# Use CUDA 12.4 base so xrfm[cu12] compiles cleanly
+# Use CUDA 12.4 base so xrfm[cu12] compiles cleanly.
 image = (
     modal.Image.from_registry("nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04", add_python="3.12")
     .apt_install("git", "wget", "build-essential")
@@ -66,8 +67,6 @@ DATA_DIR = "/data"
 RESULTS_DIR = "/results"
 
 
-# =========== Data preparation ===========
-
 @app.function(
     image=image,
     volumes={DATA_DIR: data_volume},
@@ -100,8 +99,6 @@ def prepare_data():
     data_volume.commit()
     return results
 
-
-# =========== Single experiment ===========
 
 @app.function(
     image=image,
@@ -155,8 +152,6 @@ def run_single(
     return r
 
 
-# =========== Run all main experiments in parallel ===========
-
 @app.local_entrypoint()
 def run_all_main(seed: int = 42, crop_subsample: int = 50000):
     """Launch all 5x4=20 main experiments in parallel."""
@@ -191,8 +186,6 @@ def run_all_main(seed: int = 42, crop_subsample: int = 50000):
     print(f"\nSaved combined results -> {out_path}")
     return results
 
-
-# =========== Interpretability experiment ===========
 
 @app.function(
     image=image,
@@ -282,6 +275,7 @@ def run_interpretability(
         tuning_metric=tuning_metric,
         n_trees=1,
         verbose=False,
+        random_state=seed,
     )
     print(f"Fitting xRFM with rfm_params={rfm_params}, max_leaf_size={best_hp.get('max_leaf_size', 'default')}...")
     model.fit(X_train, y_train, X_val, y_val)
@@ -400,8 +394,6 @@ def run_interpretability(
     print(f"Saved -> {out_path}")
     return out
 
-
-# =========== Scaling experiment ===========
 
 @app.function(
     image=image,
@@ -530,6 +522,114 @@ def run_scaling_point(
     return out
 
 
+@app.function(
+    image=image,
+    volumes={DATA_DIR: data_volume, RESULTS_DIR: results_volume},
+    gpu="A10G",
+    timeout=7200,
+    memory=32768,
+)
+def run_scaling_point_tuned(
+    dataset_name: str,
+    n_subsample: int,
+    model_name: str,
+    hp: dict,
+    hp_source: str,
+    seed: int = 42,
+) -> dict:
+    """Scaling point using full-n tuned HPs frozen across subsample sizes."""
+    os.environ["XRFM_CACHE_DIR"] = DATA_DIR
+    import numpy as np
+    from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit, train_test_split
+
+    from src.datasets import load_dataset
+    from src.metrics import compute_metrics, primary_metric_for_task
+    from src.models import make_model
+    from src.preprocessing import preprocess_existing_splits
+
+    ds = load_dataset(dataset_name)
+    y = np.asarray(ds.y)
+    stratify_y = y if ds.task in {"binary", "multiclass"} else None
+    X_trainval, X_test, y_trainval, y_test = train_test_split(
+        ds.X, y, test_size=0.2, random_state=seed, stratify=stratify_y
+    )
+    stratify_tv = y_trainval if ds.task in {"binary", "multiclass"} else None
+    X_train_full, X_val, y_train_full, y_val = train_test_split(
+        X_trainval, y_trainval, test_size=0.25,
+        random_state=seed, stratify=stratify_tv,
+    )
+
+    n_available = len(y_train_full)
+    n_subsample = min(int(n_subsample), n_available)
+    if n_subsample == n_available:
+        idx = np.arange(n_available)
+    elif ds.task in {"binary", "multiclass"}:
+        sss = StratifiedShuffleSplit(n_splits=1, train_size=n_subsample, random_state=seed)
+        idx, _ = next(sss.split(X_train_full, y_train_full))
+    else:
+        ss = ShuffleSplit(n_splits=1, train_size=n_subsample, random_state=seed)
+        idx, _ = next(ss.split(X_train_full))
+    idx = np.asarray(idx)
+
+    split = preprocess_existing_splits(
+        X_train=X_train_full.iloc[idx].reset_index(drop=True),
+        y_train=y_train_full[idx],
+        X_val=X_val.reset_index(drop=True),
+        y_val=y_val,
+        X_test=X_test.reset_index(drop=True),
+        y_test=y_test,
+        numerical_cols=ds.numerical_cols,
+        categorical_cols=ds.categorical_cols,
+        task=ds.task,
+        n_classes=ds.n_classes,
+    )
+
+    hp_for_run = dict(hp)
+    hp_for_run.setdefault("random_state", seed)
+    model = make_model(model_name, hp_for_run, ds.task, ds.n_classes, device="cuda")
+    try:
+        model.fit(split)
+        res = model.predict(split)
+        metrics = compute_metrics(split.y_test, res.y_pred, res.y_proba, ds.task)
+        out = {
+            "dataset": dataset_name,
+            "model": model_name,
+            "scaling_kind": "tuned_frozen_full_n",
+            "hp_source": hp_source,
+            "hp": hp_for_run,
+            "preprocessing": "fit_on_subsample_train_only",
+            "n_subsample": int(n_subsample),
+            "n_train_actual": int(len(split.y_train)),
+            "n_train_full_available": int(n_available),
+            "n_val": int(len(split.y_val)),
+            "n_test": int(len(split.y_test)),
+            "train_time_s": float(res.train_time_s),
+            "inference_time_s_per_sample": float(res.inference_time_s_per_sample),
+            "test_metrics": metrics,
+            "primary_metric": primary_metric_for_task(ds.task),
+            "model_extra": res.extra,
+        }
+    except Exception as e:
+        out = {
+            "dataset": dataset_name,
+            "model": model_name,
+            "scaling_kind": "tuned_frozen_full_n",
+            "hp_source": hp_source,
+            "hp": hp_for_run,
+            "n_subsample": int(n_subsample),
+            "error": f"{type(e).__name__}: {e}",
+            "traceback": traceback.format_exc(),
+        }
+
+    out_path = Path(RESULTS_DIR) / f"scaling_tuned_{dataset_name}_{model_name}_n{n_subsample}_seed{seed}.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w") as f:
+        json.dump(out, f, indent=2, default=str)
+    results_volume.commit()
+    print(f"Saved -> {out_path}")
+    return out
+
+
 @app.local_entrypoint()
 def run_scaling(dataset: str = "ida2016", seed: int = 42):
     """Run the scaling experiment: fixed test set, varying train size.
@@ -572,6 +672,69 @@ def run_scaling(dataset: str = "ida2016", seed: int = 42):
 
 
 @app.local_entrypoint()
+def run_scaling_tuned(dataset: str = "ida2016", seed: int = 42):
+    """Run scaling with full-n tuned HPs frozen across train sizes."""
+    sizes = [1000, 2500, 5000, 10000, 20000, 36000]
+    models = ["xrfm", "xgboost", "random_forest", "catboost"]
+
+    hp_dir_candidates = [Path("results/downloads"), Path("results")]
+    hp_by_model = {}
+    hp_source_by_model = {}
+    for m in models:
+        filename = f"main_{dataset}_{m}_seed{seed}.json"
+        for hp_dir in hp_dir_candidates:
+            path = hp_dir / filename
+            if path.exists():
+                with path.open() as f:
+                    data = json.load(f)
+                hp_by_model[m] = data["best_hp"]
+                hp_source_by_model[m] = str(path)
+                break
+        if m not in hp_by_model:
+            raise FileNotFoundError(
+                f"Missing tuned HP source for {m}: expected {filename} in "
+                f"{', '.join(str(p) for p in hp_dir_candidates)}"
+            )
+
+    jobs = [(n, m) for n in sizes for m in models]
+    print(f"Launching {len(jobs)} tuned-frozen scaling experiments in parallel...")
+    futures = [
+        run_scaling_point_tuned.spawn(
+            dataset_name=dataset,
+            n_subsample=n,
+            model_name=m,
+            hp=hp_by_model[m],
+            hp_source=hp_source_by_model[m],
+            seed=seed,
+        )
+        for (n, m) in jobs
+    ]
+
+    results = []
+    for (n, m), fut in zip(jobs, futures):
+        try:
+            r = fut.get()
+            tt = r.get("train_time_s", "ERR")
+            met = r.get("test_metrics", {})
+            extra = r.get("model_extra", {})
+            if isinstance(tt, float):
+                print(f"  {m:15s} n={n:6d} train={tt:.2f}s metric={met} extra={extra}")
+            else:
+                print(f"  {m:15s} n={n:6d} ERR={r.get('error')}")
+        except Exception as e:
+            print(f"  {m:15s} n={n:6d} FAILED: {e}")
+            r = {"dataset": dataset, "model": m, "n_subsample": n, "error": str(e)}
+        results.append(r)
+
+    out = Path("results/scaling_tuned_results.json")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w") as f:
+        json.dump(results, f, indent=2, default=str)
+    print(f"\nSaved -> {out}")
+    return results
+
+
+@app.local_entrypoint()
 def interpretability(dataset: str = "appliances_energy", seed: int = 42):
     """Entry point: run interpretability analysis and download result."""
     print(f"Running interpretability on {dataset}...")
@@ -583,8 +746,6 @@ def interpretability(dataset: str = "appliances_energy", seed: int = 42):
     print(f"Saved -> {out}")
     return result
 
-
-# =========== Download results to local ===========
 
 @app.function(image=image, volumes={RESULTS_DIR: results_volume}, timeout=600)
 def list_results() -> list:

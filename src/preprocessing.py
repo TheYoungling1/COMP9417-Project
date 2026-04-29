@@ -66,6 +66,42 @@ def make_splits(
         random_state=random_state, stratify=stratify_tv,
     )
 
+    return preprocess_existing_splits(
+        X_train=X_train,
+        y_train=y_train,
+        X_val=X_val,
+        y_val=y_val,
+        X_test=X_test,
+        y_test=y_test,
+        numerical_cols=numerical_cols,
+        categorical_cols=categorical_cols,
+        task=task,
+        n_classes=n_classes,
+    )
+
+
+def preprocess_existing_splits(
+    X_train: pd.DataFrame,
+    y_train: pd.Series | np.ndarray,
+    X_val: pd.DataFrame,
+    y_val: pd.Series | np.ndarray,
+    X_test: pd.DataFrame,
+    y_test: pd.Series | np.ndarray,
+    numerical_cols: list[str],
+    categorical_cols: list[str],
+    task: str,
+    n_classes: Optional[int],
+) -> SplitData:
+    """Impute and encode already chosen train/val/test partitions.
+
+    Imputers, scalers, and encoders are fit on the provided train partition
+    only. This is useful for scaling studies where each subsample size should
+    have its own preprocessing fit rather than borrowing full-train statistics.
+    """
+    y_train = np.asarray(y_train)
+    y_val = np.asarray(y_val)
+    y_test = np.asarray(y_test)
+
     # impute: median for numerics, mode for categoricals
     num_imputer = SimpleImputer(strategy="median") if numerical_cols else None
     cat_imputer = SimpleImputer(strategy="most_frequent") if categorical_cols else None

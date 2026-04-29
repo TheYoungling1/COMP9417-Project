@@ -173,8 +173,18 @@ def rank_random_features(interpret_json_path: Path) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def plot_scaling(scaling_json_path: Path, output_dir: Path, dataset_name: str) -> None:
-    """Two-panel plot: test metric vs n, train time vs n (log-log)."""
+def plot_scaling(
+    scaling_json_path: Path,
+    output_dir: Path,
+    dataset_name: str,
+    output_stem: str | None = None,
+    display_name: str | None = None,
+) -> None:
+    """Plot test metric and training time vs n.
+
+    AUC plots use a broken metric axis when a low outlier would otherwise
+    compress the high-performing models into an unreadable band.
+    """
     with open(scaling_json_path) as f:
         results = json.load(f)
 
@@ -186,7 +196,36 @@ def plot_scaling(scaling_json_path: Path, output_dir: Path, dataset_name: str) -
     df["metric_val"] = df["test_metrics"].apply(lambda m: (m or {}).get(primary, None))
     df = df.dropna(subset=["metric_val"])
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.2))
+    display = display_name or dataset_name
+    metric_label = {
+        "auc_roc": "AUC-ROC",
+        "accuracy": "accuracy",
+        "rmse": "RMSE",
+        "r2": "R2",
+    }.get(primary, primary)
+
+    # AUC can be visually misleading when one model has a chance-level outlier
+    # and the rest sit in a tight 0.98+ band. Use a broken y-axis in that case.
+    use_broken_metric_axis = (
+        primary == "auc_roc"
+        and df["metric_val"].min() < 0.9
+        and df["metric_val"].max() > 0.95
+    )
+    if use_broken_metric_axis:
+        fig = plt.figure(figsize=(11, 4.6))
+        gs = fig.add_gridspec(
+            2, 2,
+            width_ratios=[1.05, 1.0],
+            height_ratios=[3.0, 1.0],
+            hspace=0.08,
+            wspace=0.25,
+        )
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax1_low = fig.add_subplot(gs[1, 0], sharex=ax1)
+        ax2 = fig.add_subplot(gs[:, 1])
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.2))
+        ax1_low = None
 
     color_map = {
         "xrfm": "#1f77b4",
@@ -197,30 +236,70 @@ def plot_scaling(scaling_json_path: Path, output_dir: Path, dataset_name: str) -
     }
     for model in df["model"].unique():
         sub = df[df["model"] == model].sort_values("n_train_actual")
-        ax1.plot(sub["n_train_actual"], sub["metric_val"], "o-",
-                 label=model, color=color_map.get(model))
+        if ax1_low is not None:
+            high = sub[sub["metric_val"] > 0.9]
+            low = sub[sub["metric_val"] <= 0.9]
+            ax1.plot(high["n_train_actual"], high["metric_val"], "o-",
+                     label=model, color=color_map.get(model))
+            ax1_low.plot(low["n_train_actual"], low["metric_val"], "o",
+                         label=model, color=color_map.get(model))
+        else:
+            ax1.plot(sub["n_train_actual"], sub["metric_val"], "o-",
+                     label=model, color=color_map.get(model))
         ax2.plot(sub["n_train_actual"], sub["train_time_s"], "o-",
                  label=model, color=color_map.get(model))
 
-    ax1.set_xlabel("Training samples n")
-    ax1.set_ylabel(f"Test {primary}")
     ax1.set_xscale("log")
-    ax1.set_title(f"Test {primary} vs training size on {dataset_name}")
-    ax1.legend(loc="best")
+    ax1.set_ylabel(f"Test {metric_label}")
+    ax1.set_title(f"Test {metric_label} vs training size on {display}")
+    if ax1_low is not None:
+        high_vals = df.loc[df["metric_val"] > 0.9, "metric_val"]
+        low_vals = df.loc[df["metric_val"] <= 0.9, "metric_val"]
+        ax1.set_ylim(max(0.0, high_vals.min() - 0.002), min(1.0, high_vals.max() + 0.001))
+        ax1_low.set_ylim(max(0.0, low_vals.min() - 0.01), min(1.0, low_vals.max() + 0.01))
+        ax1_low.set_xscale("log")
+        ax1.tick_params(labelbottom=False)
+        ax1_low.set_xlabel("Training samples n")
+        ax1.spines.bottom.set_visible(False)
+        ax1_low.spines.top.set_visible(False)
+
+        d = 0.012
+        kwargs = dict(color="black", clip_on=False, linewidth=0.8)
+        ax1.plot((-d, +d), (-d, +d), transform=ax1.transAxes, **kwargs)
+        ax1.plot((1 - d, 1 + d), (-d, +d), transform=ax1.transAxes, **kwargs)
+        ax1_low.plot((-d, +d), (1 - d, 1 + d), transform=ax1_low.transAxes, **kwargs)
+        ax1_low.plot((1 - d, 1 + d), (1 - d, 1 + d), transform=ax1_low.transAxes, **kwargs)
+        if len(low_vals):
+            low_row = df.loc[df["metric_val"].idxmin()]
+            low_note = "chance-level" if 0.45 <= low_row["metric_val"] <= 0.55 else "low-AUC"
+            ax1_low.annotate(
+                f"{low_row['model']} {low_note} point",
+                xy=(low_row["n_train_actual"], low_row["metric_val"]),
+                xytext=(8, 8),
+                textcoords="offset points",
+                fontsize=8,
+            )
+    else:
+        ax1.set_xlabel("Training samples n")
+        ax1.legend(loc="best")
 
     ax2.set_xlabel("Training samples n")
     ax2.set_ylabel("Training time (s)")
     ax2.set_xscale("log")
     ax2.set_yscale("log")
-    ax2.set_title(f"Training time vs training size on {dataset_name}")
+    ax2.set_title(f"Training time vs training size on {display}")
     ax2.legend(loc="best")
 
-    fig.tight_layout()
-    out = output_dir / f"scaling_{dataset_name}.png"
+    if use_broken_metric_axis:
+        fig.subplots_adjust(left=0.07, right=0.98, bottom=0.14, top=0.88)
+    else:
+        fig.tight_layout()
+    stem = output_stem or dataset_name
+    out = output_dir / f"scaling_{stem}.png"
     fig.savefig(out)
     plt.close(fig)
     print(f"Saved {out}")
 
-    csv_out = output_dir / f"scaling_{dataset_name}.csv"
+    csv_out = output_dir / f"scaling_{stem}.csv"
     df[["model", "n_train_actual", "metric_val", "train_time_s", "inference_time_s_per_sample"]].to_csv(csv_out, index=False)
     print(f"Saved {csv_out}")

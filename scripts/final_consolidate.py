@@ -127,6 +127,22 @@ def main():
         _json.dump(cleaned, f, indent=2, default=str)
     plot_scaling(Path("results/scaling_results_clean.json"), figures, dataset_name="ida2016")
 
+    tuned_scaling_files = sorted(downloads.glob("scaling_tuned_ida2016_*.json"))
+    if tuned_scaling_files:
+        tuned_scaling = []
+        for f in tuned_scaling_files:
+            with f.open() as fh:
+                tuned_scaling.append(json.load(fh))
+        with open("results/scaling_tuned_results_clean.json", "w") as f:
+            _json.dump(tuned_scaling, f, indent=2, default=str)
+        plot_scaling(
+            Path("results/scaling_tuned_results_clean.json"),
+            figures,
+            dataset_name="ida2016",
+            output_stem="ida2016_tuned",
+            display_name="IDA2016 (tuned frozen HP)",
+        )
+
     print(f"Done. Files in results/ and figures/.")
 
 

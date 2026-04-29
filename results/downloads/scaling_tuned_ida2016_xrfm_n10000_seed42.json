@@ -1,0 +1,35 @@
+{
+  "dataset": "ida2016",
+  "model": "xrfm",
+  "scaling_kind": "tuned_frozen_full_n",
+  "hp_source": "results/downloads/main_ida2016_xrfm_seed42.json",
+  "hp": {
+    "bandwidth": 199.32553932270753,
+    "exponent": 1.2692489940542204,
+    "kernel": "l2",
+    "reg": 0.9528024359637332,
+    "diag": true,
+    "bandwidth_mode": "constant",
+    "iters": 5,
+    "M_batch_size": 1000,
+    "max_leaf_size": 36000,
+    "random_state": 42
+  },
+  "preprocessing": "fit_on_subsample_train_only",
+  "n_subsample": 10000,
+  "n_train_actual": 10000,
+  "n_train_full_available": 36000,
+  "n_val": 12000,
+  "n_test": 12000,
+  "train_time_s": 2.0662825107574463,
+  "inference_time_s_per_sample": 6.688336531321208e-06,
+  "test_metrics": {
+    "accuracy": 0.9891666666666666,
+    "auc_roc": 0.9869921610169491
+  },
+  "primary_metric": "auc_roc",
+  "model_extra": {
+    "n_leaves": 1,
+    "actual_max_leaf_size": 26567
+  }
+}

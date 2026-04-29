@@ -1,0 +1,28 @@
+{
+  "dataset": "ida2016",
+  "model": "random_forest",
+  "scaling_kind": "tuned_frozen_full_n",
+  "hp_source": "results/downloads/main_ida2016_random_forest_seed42.json",
+  "hp": {
+    "n_estimators": 599,
+    "max_depth": 24,
+    "min_samples_split": 5,
+    "min_samples_leaf": 7,
+    "max_features": "log2",
+    "random_state": 42
+  },
+  "preprocessing": "fit_on_subsample_train_only",
+  "n_subsample": 2500,
+  "n_train_actual": 2500,
+  "n_train_full_available": 36000,
+  "n_val": 12000,
+  "n_test": 12000,
+  "train_time_s": 1.4823834896087646,
+  "inference_time_s_per_sample": 2.046718200047811e-05,
+  "test_metrics": {
+    "accuracy": 0.9869166666666667,
+    "auc_roc": 0.9843697033898307
+  },
+  "primary_metric": "auc_roc",
+  "model_extra": {}
+}

@@ -1,6 +1,6 @@
 # xRFM Comparison Benchmark
 
-Graduate-level comparison of xRFM (Beaglehole et al., 2025; arXiv:2508.10053) against XGBoost, Random Forest, CatBoost, and TabPFN-v2 on 5 tabular datasets.
+Graduate-level comparison of xRFM (Beaglehole et al., 2025; arXiv:2508.10053) against XGBoost, Random Forest, and CatBoost on 5 tabular datasets. A TabPFN-v2 wrapper is included but was not exercised in the reported results — its license gate requires `TABPFN_TOKEN` and blocked our headless Modal pipeline (see report §4).
 
 ## Datasets (all UCI, verified absent from TALENT benchmark + xRFM meta-test)
 
@@ -18,7 +18,7 @@ Graduate-level comparison of xRFM (Beaglehole et al., 2025; arXiv:2508.10053) ag
 - **XGBoost** (Chen & Guestrin, 2016) — gradient boosted trees with early stopping
 - **Random Forest** (Breiman, 2001) — bagged trees baseline
 - **CatBoost** (Prokhorenkova et al., 2018) — ordered boosting with native categorical handling
-- **TabPFN-v2** (Hollmann et al., *Nature* 2025) — prior-data-fitted transformer (run separately, see step 4)
+- **TabPFN-v2** (Hollmann et al., *Nature* 2025) — prior-data-fitted transformer. Wrapper provided but **not run** in the reported results (license-gated, see step 4 / report §4)
 
 ## Structure
 
@@ -54,7 +54,7 @@ Graduate-level comparison of xRFM (Beaglehole et al., 2025; arXiv:2508.10053) ag
 
 ## Running
 
-The full pipeline is 25 main experiments (5 datasets × 5 models) plus interpretability and scaling sweeps. By default `run_all_main` runs 4 of the 5 models — TabPFN is excluded from CI because of its license and is launched separately in step 4.
+The full pipeline is 20 main experiments (5 datasets × 4 models) plus interpretability and scaling sweeps. `run_all_main` runs xRFM, XGBoost, RF, and CatBoost. The TabPFN wrapper is provided for completeness but was not run for the reported results — every TabPFN attempt in `results/downloads/main_*_tabpfn_*.json` failed with `TabPFNLicenseError` because the headless Modal container has no `TABPFN_TOKEN` set. To exercise it yourself, see step 4.
 
 ```bash
 # 1. (Optional) Local CPU smoke test — 5 min, no Modal credits.
@@ -68,24 +68,35 @@ modal run modal_app.py::prepare_data
 modal run modal_app.py::run_all_main
 # optional: --seed 42 --crop-subsample 50000
 
-# 4. TabPFN-v2 — license-gated, kicked off per-dataset:
+# 4. TabPFN-v2 — license-gated, requires manual setup. Not run for the reported results.
+#    Get an API key at https://ux.priorlabs.ai (accept the license on the Licenses tab),
+#    then export TABPFN_TOKEN=... before launching. The Modal app will need to forward
+#    that secret into the container; see modal_app.py.
 for ds in seoul_bike appliances_energy hcc_survival ida2016 crop_mapping; do
     modal run --detach modal_app.py::run_single --dataset-name $ds --model-name tabpfn
 done
 
 # 5. Interpretability (AGOP vs PCA vs MI vs permutation on Appliances Energy).
+#    Produces Figures 1 and 2 of the report.
 modal run modal_app.py::interpretability
 
-# 6. Scaling sweep on IDA2016 (sizes 1k, 2.5k, 5k, 10k, 20k, 36k).
+# 6. Default-HP scaling sweep on IDA2016 (sizes 1k, 2.5k, 5k, 10k, 20k, 36k).
+#    Used only as the "earlier default-HP sweep" referenced in §3.1/§3.3.
 modal run modal_app.py::run_scaling
 
-# 7. Pull the per-experiment JSONs back into ./results/.
+# 7. Pull the per-experiment JSONs back into ./results/. Must come before step 8.
 modal run modal_app.py::download_results
 
-# 8. Aggregate, plot, and build the PDF report.
-python scripts/final_consolidate.py
-python scripts/plot_per_leaf_agop.py
-bash   scripts/build_pdf.sh
+# 8. Tuned-HP scaling sweep — produces Figure 3 of the report.
+#    Reads each model's full-n best HPs from results/downloads/main_*_seed42.json
+#    (downloaded in step 7) and freezes them across train sizes.
+modal run modal_app.py::run_scaling_tuned
+modal run modal_app.py::download_results   # second pull, for the tuned sweep outputs
+
+# 9. Aggregate JSONs into Tables 2-3, build all figures, compile the PDF.
+python scripts/final_consolidate.py        # tables + interpretability + both scaling figures
+python scripts/plot_per_leaf_agop.py       # per-leaf AGOP figure (Fig. 2)
+bash   scripts/build_pdf.sh                # tectonic compiles report/report.tex
 ```
 
 `scripts/run_catboost_only.sh` is a convenience wrapper for re-running just the CatBoost sweep (e.g. after tweaking its HP space) without touching the other models.

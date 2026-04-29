@@ -31,3 +31,4 @@ env/
 # Project-local artifacts (cached data, results, figures, build output)
 data_cache/
 .modal/
+report/

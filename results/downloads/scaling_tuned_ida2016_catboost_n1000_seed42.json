@@ -1,0 +1,30 @@
+{
+  "dataset": "ida2016",
+  "model": "catboost",
+  "scaling_kind": "tuned_frozen_full_n",
+  "hp_source": "results/downloads/main_ida2016_catboost_seed42.json",
+  "hp": {
+    "iterations": 2000,
+    "depth": 9,
+    "learning_rate": 0.13726999259085554,
+    "l2_leaf_reg": 4.374758610283275,
+    "bagging_temperature": 0.854676215846867,
+    "border_count": 64,
+    "early_stopping_rounds": 50,
+    "random_state": 42
+  },
+  "preprocessing": "fit_on_subsample_train_only",
+  "n_subsample": 1000,
+  "n_train_actual": 1000,
+  "n_train_full_available": 36000,
+  "n_val": 12000,
+  "n_test": 12000,
+  "train_time_s": 2.1786136627197266,
+  "inference_time_s_per_sample": 8.551279703776041e-07,
+  "test_metrics": {
+    "accuracy": 0.9868333333333333,
+    "auc_roc": 0.9878813559322035
+  },
+  "primary_metric": "auc_roc",
+  "model_extra": {}
+}

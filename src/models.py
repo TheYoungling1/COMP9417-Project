@@ -41,6 +41,8 @@ class XRFMWrapper:
         self.device = device
         self.model = None
         self.train_time_s = 0.0
+        self.n_leaves = None
+        self.actual_max_leaf_size = None
 
     def _make_y(self, y: np.ndarray, is_classification: bool) -> np.ndarray:
         if is_classification:
@@ -51,6 +53,22 @@ class XRFMWrapper:
             return y_onehot
         else:
             return y.astype(np.float32).reshape(-1, 1)
+
+    def _count_leaves(self, node: dict) -> int:
+        if node.get("type") == "leaf":
+            return 1
+        return self._count_leaves(node["left"]) + self._count_leaves(node["right"])
+
+    def _sync_device(self, device: Any) -> None:
+        if getattr(device, "type", None) == "cuda":
+            import torch
+            torch.cuda.synchronize(device)
+
+    def _extra(self) -> dict:
+        return {
+            "n_leaves": self.n_leaves,
+            "actual_max_leaf_size": self.actual_max_leaf_size,
+        }
 
     def fit(self, split: SplitData) -> None:
         import torch
@@ -92,10 +110,16 @@ class XRFMWrapper:
             tuning_metric=tuning_metric,
             n_trees=1,
             verbose=False,
+            random_state=self.hp.get("random_state", 42),
         )
+        self._sync_device(device)
         t0 = time.time()
         self.model.fit(X_train, y_train, X_val, y_val)
+        self._sync_device(device)
         self.train_time_s = time.time() - t0
+        trees = self.model.trees or []
+        self.n_leaves = sum(self._count_leaves(tree) for tree in trees)
+        self.actual_max_leaf_size = getattr(self.model, "max_leaf_size", None)
 
     def predict(self, split: SplitData) -> ModelResult:
         import torch
@@ -103,22 +127,24 @@ class XRFMWrapper:
         X_test = torch.tensor(split.X_test_enc, dtype=torch.float32, device=device)
 
         if split.task == "regression":
+            self._sync_device(device)
             t0 = time.time()
             y_pred_raw = self.model.predict(X_test)
-            inf = time.time() - t0
             if isinstance(y_pred_raw, torch.Tensor):
                 y_pred_raw = y_pred_raw.detach().cpu().numpy()
+            inf = time.time() - t0
             return ModelResult(
                 y_pred=np.asarray(y_pred_raw).reshape(-1),
                 y_proba=None,
                 train_time_s=self.train_time_s,
                 inference_time_s_per_sample=inf / len(split.y_test),
                 n_test=len(split.y_test),
+                extra=self._extra(),
             )
         else:
+            self._sync_device(device)
             t0 = time.time()
             proba = self.model.predict_proba(X_test)
-            inf = time.time() - t0
             if isinstance(proba, torch.Tensor):
                 proba = proba.detach().cpu().numpy()
             proba = np.asarray(proba)
@@ -131,12 +157,14 @@ class XRFMWrapper:
                     p1 = 1.0 / (1.0 + np.exp(-p1))
                 proba = np.stack([1.0 - p1, p1], axis=1)
             y_pred = proba.argmax(axis=1)
+            inf = time.time() - t0
             return ModelResult(
                 y_pred=y_pred,
                 y_proba=proba,
                 train_time_s=self.train_time_s,
                 inference_time_s_per_sample=inf / len(split.y_test),
                 n_test=len(split.y_test),
+                extra=self._extra(),
             )
 
 
@@ -351,6 +379,11 @@ class CatBoostWrapper:
 class TabPFNWrapper:
     """TabPFN v2 (Hollmann et al., Nature 2025). Pretrained transformer.
     Scales to ~10k samples / 500 features natively; larger data must be subsampled.
+
+    Requires TABPFN_TOKEN env var (https://ux.priorlabs.ai) — without it the
+    .fit() call raises TabPFNLicenseError. Not exercised in our reported runs;
+    every result file under results/downloads/main_*_tabpfn_*.json is an error
+    record from a license-gated run.
     """
 
     name = "TabPFN-v2"
